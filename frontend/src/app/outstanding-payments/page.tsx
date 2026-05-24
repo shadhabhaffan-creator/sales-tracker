@@ -210,7 +210,7 @@ export default function OutstandingPaymentsPage() {
                 <Wallet size={18} className="shrink-0 text-cyan-400" />
                 <div>
                   <span className="text-cyan-300 font-black uppercase tracking-wider block">Accounts Payable Liability</span>
-                  <span>Total outstanding liabilities stand at ₹{dashboard.totalOutstandingAmount.toLocaleString()}.</span>
+                  <span>Total outstanding liabilities stand at ₹{Number(dashboard?.totalOutstandingAmount || 0).toLocaleString()}.</span>
                 </div>
               </div>
             )}
@@ -224,7 +224,7 @@ export default function OutstandingPaymentsPage() {
             <div>
               <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Total Liabilities</span>
               <span className="text-2xl font-black tracking-tight text-white block mt-2">
-                ₹{dashboard.totalOutstandingAmount.toLocaleString()}
+                ₹{Number(dashboard?.totalOutstandingAmount || 0).toLocaleString()}
               </span>
             </div>
             <div className="absolute top-6 right-6 w-10 h-10 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center justify-center text-cyan-400">
@@ -360,7 +360,7 @@ export default function OutstandingPaymentsPage() {
                     const daysRemaining = getDaysRemaining(payment.dueDate);
                     
                     return (
-                      <tr key={payment._id} className="hover:bg-white/5 transition-colors group">
+                      <tr key={payment._id || payment.id} className="hover:bg-white/5 transition-colors group">
                         <td className="py-4 px-6 font-bold">
                           <span className="block text-white group-hover:text-cyan-400 transition-colors">
                             {payment.supplierId?.name || 'Unknown'}
@@ -376,13 +376,13 @@ export default function OutstandingPaymentsPage() {
                           {payment.transactionId || 'No Ref'}
                         </td>
                         <td className="py-4 px-4 text-right font-bold text-white">
-                          ₹{payment.purchaseAmount?.toLocaleString()}
+                          ₹{Number(payment?.purchaseAmount || 0).toLocaleString()}
                         </td>
                         <td className="py-4 px-4 text-right text-emerald-400 font-semibold">
-                          ₹{payment.amountPaid?.toLocaleString()}
+                          ₹{Number(payment?.amountPaid || 0).toLocaleString()}
                         </td>
                         <td className="py-4 px-4 text-right text-cyan-400 font-mono font-bold">
-                          ₹{payment.remainingBalance?.toLocaleString()}
+                          ₹{Number(payment?.remainingBalance || 0).toLocaleString()}
                         </td>
                         <td className="py-4 px-4">
                           <span className="px-2 py-0.5 bg-white/5 rounded text-[10px] font-black text-gray-400">
@@ -491,7 +491,7 @@ export default function OutstandingPaymentsPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400 font-medium">Outstanding Balance:</span>
-                    <span className="text-cyan-400 font-black text-sm">₹{selectedPayment.remainingBalance?.toLocaleString()}</span>
+                    <span className="text-cyan-400 font-black text-sm">₹{Number(selectedPayment?.remainingBalance || 0).toLocaleString()}</span>
                   </div>
                 </div>
 
@@ -500,7 +500,7 @@ export default function OutstandingPaymentsPage() {
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Payment Amount (₹) *</label>
                       <input 
-                        type="number" step="0.01" required min="1" max={selectedPayment.remainingBalance}
+                        type="number" step="0.01" required min="1" max={selectedPayment?.remainingBalance || 0}
                         className="w-full glass-input text-xs font-bold"
                         value={payFormData.amount || ''}
                         onChange={(e) => setPayFormData({ ...payFormData, amount: Number(e.target.value) || 0 })}
@@ -599,7 +599,7 @@ export default function OutstandingPaymentsPage() {
                   {historyPayment.paymentsHistory?.map((log: any, idx: number) => (
                     <div key={log._id || idx} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex justify-between items-start gap-4">
                       <div className="space-y-1">
-                        <span className="block text-emerald-400 font-black text-sm">₹{log.amount.toLocaleString()}</span>
+                        <span className="block text-emerald-400 font-black text-sm">₹{Number(log?.amount || 0).toLocaleString()}</span>
                         <span className="block text-[10px] text-gray-400 font-medium">
                           Method: <strong className="text-gray-300 font-black">{log.paymentMethod}</strong>
                         </span>
