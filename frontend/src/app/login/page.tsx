@@ -22,12 +22,13 @@ export default function LoginPage() {
 
     try {
       if (username === 'admin' && password === 'admin123') {
+
         login('temp-token', {
           id: '1',
           username: 'admin',
           role: 'ADMIN',
           fullName: 'Admin',
-          permissions: []
+          permissions: {} // fixed
         });
 
         toast.success('Welcome back!');
@@ -50,13 +51,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative">
       <motion.div
-        initial={{opacity:0,y:20}}
-        animate={{opacity:1,y:0}}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         className="glass-panel w-full max-w-md p-10 rounded-3xl"
       >
         <div className="text-center mb-10">
           <div className="w-16 h-16 bg-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck size={32}/>
+            <ShieldCheck size={32} />
           </div>
 
           <h1 className="text-3xl font-bold text-white">
@@ -74,7 +75,7 @@ export default function LoginPage() {
             required
             placeholder="admin"
             value={username}
-            onChange={(e)=>setUsername(e.target.value)}
+            onChange={(e) => setUsername(e.target.value)}
             className="glass-input w-full h-14"
           />
 
@@ -83,7 +84,7 @@ export default function LoginPage() {
             type="password"
             placeholder="admin123"
             value={password}
-            onChange={(e)=>setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             className="glass-input w-full h-14"
           />
 
@@ -92,7 +93,7 @@ export default function LoginPage() {
             className="glass-button w-full h-14"
           >
             {loading
-              ? <Loader2 className="animate-spin"/>
+              ? <Loader2 className="animate-spin" />
               : 'Sign In'}
           </button>
 
