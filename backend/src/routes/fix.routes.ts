@@ -14,14 +14,14 @@ router.get('/resync', async (req, res) => {
       // Get all settlements for this customer
       const settlements = await Settlement.find({ customerId: customer._id });
 
-      const totalSpent = sales.reduce((sum, s) => sum + s.totalAmount, 0);
+      const totalSpent = sales.reduce((sum: number, s: any) => sum + s.totalAmount, 0);
       
       // totalPaid is upfront payments + later settlements
-      const upfrontPaid = sales.reduce((sum, s) => {
+      const upfrontPaid = sales.reduce((sum: number, s: any) => {
         if (s.paymentType === 'CASH') return sum + s.totalAmount;
         return sum + (s.totalAmount - (s.dueAmount || 0));
       }, 0);
-      const laterPaid = settlements.reduce((sum, s) => sum + s.amountPaid, 0);
+      const laterPaid = settlements.reduce((sum: number, s: any) => sum + s.amountPaid, 0);
       
       const totalPaid = upfrontPaid + laterPaid;
       const totalDue = totalSpent - totalPaid;

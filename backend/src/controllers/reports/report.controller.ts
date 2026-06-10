@@ -20,36 +20,51 @@ export const getDailyReport = async (req: Request, res: Response) => {
         startDate = startOfDay(new Date());
     }
 
-    const [sales, expenses, settlements, customerStats, products, topProductsData] = await Promise.all([
+    const [sales, expenses, settlements, allCustomers, products, allSalesForTopProducts] = await Promise.all([
       Sale.find({ date: { $gte: startDate, $lte: endDate } }).populate('items.productId'),
       Expense.find({ date: { $gte: startDate, $lte: endDate } }),
       Settlement.find({ date: { $gte: startDate, $lte: endDate } }),
-      Customer.aggregate([
-        { $group: { _id: null, totalDue: { $sum: { $subtract: ['$totalSpent', '$totalPaid'] } }, totalSpent: { $sum: '$totalSpent' } } }
-      ]),
+      Customer.find({}),
       Product.find(),
-      Sale.aggregate([
-        { $match: { date: { $gte: startDate, $lte: endDate } } },
-        { $unwind: '$items' },
-        { $group: { 
-          _id: '$items.productId', 
-          name: { $first: '$items.name' },
-          salesCount: { $sum: '$items.quantity' },
-          totalRevenue: { $sum: '$items.totalPrice' }
-        }},
-        { $sort: { salesCount: -1 } },
-        { $limit: 5 }
-      ])
+      Sale.find({ date: { $gte: startDate, $lte: endDate } })
     ]);
 
-    const topSellingProducts = topProductsData || [];
+    // Calculate Customer Stats locally
+    const customerStats = {
+      totalDue: allCustomers.reduce((sum: number, c: any) => sum + (Number(c.totalDue) || 0), 0),
+      totalSpent: allCustomers.reduce((sum: number, c: any) => sum + (Number(c.totalSpent) || 0), 0)
+    };
 
-    const totalSales = sales.reduce((sum, s) => sum + s.totalAmount, 0);
-    const totalProfit = sales.reduce((sum, s) => sum + (s.profit || 0), 0);
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const totalSettlements = settlements.reduce((sum, s) => sum + (s.amountPaid || 0), 0);
-    const totalPendingDues = customerStats[0]?.totalDue || 0;
-    const inventoryValue = products.reduce((sum, p) => sum + (p.stock * p.costPrice), 0);
+    // Calculate Top Selling Products locally
+    const productSalesMap: Record<string, { _id: string; name: string; salesCount: number; totalRevenue: number }> = {};
+    for (const sale of allSalesForTopProducts) {
+      if (sale.items) {
+        for (const item of sale.items) {
+          const prodId = String(item.productId?.id || item.productId || '');
+          if (!prodId) continue;
+          if (!productSalesMap[prodId]) {
+            productSalesMap[prodId] = {
+              _id: prodId,
+              name: item.name || 'Unknown Product',
+              salesCount: 0,
+              totalRevenue: 0
+            };
+          }
+          productSalesMap[prodId].salesCount += Number(item.quantity || 0);
+          productSalesMap[prodId].totalRevenue += Number(item.totalPrice || 0);
+        }
+      }
+    }
+    const topSellingProducts = Object.values(productSalesMap)
+      .sort((a, b) => b.salesCount - a.salesCount)
+      .slice(0, 5);
+
+    const totalSales = sales.reduce((sum: number, s: any) => sum + s.totalAmount, 0);
+    const totalProfit = sales.reduce((sum: number, s: any) => sum + (s.profit || 0), 0);
+    const totalExpenses = expenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+    const totalSettlements = settlements.reduce((sum: number, s: any) => sum + (s.amountPaid || 0), 0);
+    const totalPendingDues = customerStats.totalDue;
+    const inventoryValue = products.reduce((sum: number, p: any) => sum + (p.stock * p.costPrice), 0);
 
     // Calculate net profit
     const netProfit = totalProfit - totalExpenses;
@@ -64,10 +79,12 @@ export const getDailyReport = async (req: Request, res: Response) => {
       const daySales = await Sale.find({ date: { $gte: dayStart, $lte: dayEnd } });
       dailyTrend.push({
         date: format(d, 'MMM dd'),
-        sales: daySales.reduce((sum, s) => sum + s.totalAmount, 0),
-        profit: daySales.reduce((sum, s) => sum + (s.profit || 0), 0)
+        sales: daySales.reduce((sum: number, s: any) => sum + s.totalAmount, 0),
+        profit: daySales.reduce((sum: number, s: any) => sum + (s.profit || 0), 0)
       });
     }
+
+    const netCash = (totalSales - (sales.filter((s: any) => s.paymentType === 'CREDIT').reduce((sum: number, s: any) => sum + s.totalAmount, 0))) + totalSettlements - totalExpenses;
 
     res.json({
       summary: {
@@ -78,7 +95,7 @@ export const getDailyReport = async (req: Request, res: Response) => {
         totalPendingDues,
         netProfit,
         inventoryValue,
-        netCash: (totalSales - (sales.filter(s => s.paymentType === 'CREDIT').reduce((sum, s) => sum + s.totalAmount, 0))) + totalSettlements - totalExpenses
+        netCash
       },
       trends: dailyTrend.reverse(),
       topSellingProducts,

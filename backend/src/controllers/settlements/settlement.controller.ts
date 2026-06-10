@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { Settlement, Customer, Sale } from '../../models';
-import mongoose from 'mongoose';
 
 export const createSettlement = async (req: Request, res: Response) => {
   try {
@@ -51,10 +50,8 @@ export const createSettlement = async (req: Request, res: Response) => {
 
     // Update customer totals
     await Customer.findByIdAndUpdate(customerId, {
-      $inc: { 
-        totalPaid: amountPaid,
-        totalDue: -amountPaid
-      }
+      totalPaid: customer.totalPaid + amountPaid,
+      totalDue: Math.max(0, customer.totalDue - amountPaid)
     });
 
     res.status(201).json(settlement);
@@ -103,30 +100,26 @@ export const getSettlementAnalytics = async (req: Request, res: Response) => {
 
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const [daily, weekly, monthly, totals] = await Promise.all([
-      Settlement.aggregate([
-        { $match: { date: { $gte: today } } },
-        { $group: { _id: null, total: { $sum: '$amountPaid' } } }
-      ]),
-      Settlement.aggregate([
-        { $match: { date: { $gte: startOfWeek } } },
-        { $group: { _id: null, total: { $sum: '$amountPaid' } } }
-      ]),
-      Settlement.aggregate([
-        { $match: { date: { $gte: startOfMonth } } },
-        { $group: { _id: null, total: { $sum: '$amountPaid' } } }
-      ]),
-      Customer.aggregate([
-        { $group: { 
-          _id: null, 
-          totalSpent: { $sum: '$totalSpent' },
-          totalRecovered: { $sum: '$totalPaid' }
-        }}
-      ])
+    const [allSettlements, allCustomers] = await Promise.all([
+      Settlement.find({}),
+      Customer.find({})
     ]);
 
-    // Calculate pending dues from totals
-    const totalPending = (totals[0]?.totalSpent || 0) - (totals[0]?.totalRecovered || 0);
+    const dailyTotal = allSettlements
+      .filter((s: any) => new Date(s.date) >= today)
+      .reduce((sum: number, s: any) => sum + s.amountPaid, 0);
+
+    const weeklyTotal = allSettlements
+      .filter((s: any) => new Date(s.date) >= startOfWeek)
+      .reduce((sum: number, s: any) => sum + s.amountPaid, 0);
+
+    const monthlyTotal = allSettlements
+      .filter((s: any) => new Date(s.date) >= startOfMonth)
+      .reduce((sum: number, s: any) => sum + s.amountPaid, 0);
+
+    const totalSpent = allCustomers.reduce((sum: number, c: any) => sum + c.totalSpent, 0);
+    const totalRecovered = allCustomers.reduce((sum: number, c: any) => sum + c.totalPaid, 0);
+    const totalPending = totalSpent - totalRecovered;
 
     // Overdue balances (simplified: any customer with balance > 0 and no activity in 30 days)
     const thirtyDaysAgo = new Date();
@@ -138,11 +131,11 @@ export const getSettlementAnalytics = async (req: Request, res: Response) => {
     });
 
     res.json({
-      daily: daily[0]?.total || 0,
-      weekly: weekly[0]?.total || 0,
-      monthly: monthly[0]?.total || 0,
+      daily: dailyTotal,
+      weekly: weeklyTotal,
+      monthly: monthlyTotal,
       totalDues: totalPending,
-      totalRecovered: totals[0]?.totalRecovered || 0,
+      totalRecovered: totalRecovered,
       overdueCount: overdue
     });
   } catch (error: any) {
@@ -160,9 +153,9 @@ export const getCustomerTimeline = async (req: Request, res: Response) => {
     ]);
 
     const timeline = [
-      ...sales.map(s => ({ ...s.toObject(), type: 'SALE' })),
-      ...settlements.map(s => ({ ...s.toObject(), type: 'SETTLEMENT' }))
-    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      ...sales.map((s: any) => ({ ...s, type: 'SALE' })),
+      ...settlements.map((s: any) => ({ ...s, type: 'SETTLEMENT' }))
+    ].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     res.json(timeline);
   } catch (error: any) {
@@ -179,13 +172,13 @@ export const deleteSettlement = async (req: Request, res: Response) => {
       throw new Error('Settlement not found');
     }
 
-    // Reverse customer balance
-    await Customer.findByIdAndUpdate(settlement.customerId, {
-      $inc: { 
-        totalPaid: -settlement.amountPaid,
-        totalDue: settlement.amountPaid
-      }
-    });
+    const customer = await Customer.findById(settlement.customerId);
+    if (customer) {
+      await Customer.findByIdAndUpdate(settlement.customerId, {
+        totalPaid: Math.max(0, customer.totalPaid - settlement.amountPaid),
+        totalDue: customer.totalDue + settlement.amountPaid
+      });
+    }
 
     await Settlement.findByIdAndDelete(id);
 

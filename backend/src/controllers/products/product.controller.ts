@@ -24,7 +24,7 @@ export const getProductHistory = async (req: Request, res: Response) => {
       .sort({ createdAt: -1 })
       .limit(10);
     
-    const formattedHistory = history.map(item => ({
+    const formattedHistory = history.map((item: any) => ({
       customerName: (item.saleId as any)?.customerId?.name || 'Guest',
       quantity: item.quantity,
       price: item.unitPrice,

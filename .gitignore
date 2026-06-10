@@ -24,6 +24,8 @@ next-env.d.ts
 # database data
 db-data/
 db-data-v2/
+*.db
+*.db-journal
 
 # misc
 .DS_Store
