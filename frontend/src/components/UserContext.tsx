@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchWithAuth } from '@/services/api';
+import { supabase } from '@/lib/supabase';
 
 interface User {
   id: string;
@@ -15,10 +15,9 @@ interface User {
 interface UserContextType {
   user: User | null;
   loading: boolean;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAdmin: boolean;
   hasPermission: (permission: string) => boolean;
-  login: (token: string, user: User) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -28,34 +27,108 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const checkSession = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const data = await fetchWithAuth('/auth/me');
-        setUser(data.user);
-      } catch {
-        localStorage.removeItem('token');
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkSession();
-  }, []);
+  const fetchProfile = async (userId: string, email: string | undefined): Promise<User | null> => {
+    try {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('User')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem('token', token);
-    setUser(userData);
-    router.push('/dashboard');
+      if (profileError || !userProfile) {
+        console.warn('Profile not found, falling back to auth metadata:', profileError);
+        return {
+          id: userId,
+          username: email?.split('@')[0] || 'user',
+          fullName: email?.split('@')[0] || 'System User',
+          role: 'ADMIN',
+          permissions: {}
+        };
+      }
+
+      const { data: userPerms } = await supabase
+        .from('Permission')
+        .select('*')
+        .eq('userId', userId)
+        .single();
+
+      const permissionsMap: Record<string, boolean> = {};
+      if (userPerms) {
+        Object.keys(userPerms).forEach(key => {
+          if (typeof userPerms[key] === 'boolean') {
+            permissionsMap[key] = userPerms[key];
+          }
+        });
+      }
+
+      return {
+        id: userProfile.id,
+        username: userProfile.username,
+        fullName: userProfile.fullName || 'System User',
+        role: userProfile.role || 'VIEWER',
+        permissions: permissionsMap
+      };
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      return null;
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
+  useEffect(() => {
+    let mounted = true;
+
+    const syncSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          if (mounted) {
+            setUser(null);
+            setLoading(false);
+          }
+          return;
+        }
+
+        const profile = await fetchProfile(session.user.id, session.user.email);
+        if (mounted) {
+          setUser(profile);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Sync session error:', err);
+        if (mounted) setLoading(false);
+      }
+    };
+
+    syncSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      if (session) {
+        setLoading(true);
+        const profile = await fetchProfile(session.user.id, session.user.email);
+        setUser(profile);
+        setLoading(false);
+        if (window.location.pathname === '/login') {
+          router.push('/dashboard');
+        }
+      } else {
+        setUser(null);
+        setLoading(false);
+        router.push('/login');
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [router]);
+
+  const logout = async () => {
+    setLoading(true);
+    await supabase.auth.signOut();
     setUser(null);
+    setLoading(false);
     router.push('/login');
   };
 
@@ -67,7 +140,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ user, loading, logout, isAdmin, hasPermission, login }}>
+    <UserContext.Provider value={{ user, loading, logout, isAdmin, hasPermission }}>
       {loading ? (
         <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-950 relative overflow-hidden">
           <div className="absolute inset-0 bg-cyan-500/5 blur-[100px] rounded-full scale-150 animate-pulse" />

@@ -5,47 +5,44 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUser } from '@/components/UserContext';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const [username, setUsername] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const { login } = useUser();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (username === 'admin' && password === 'admin123') {
+      // Allow login via username or email
+      let email = usernameOrEmail.trim();
+      if (!email.includes('@')) {
+        email = `${email}@aurasales.local`;
+      }
 
-        login('temp-token', {
-          id: '1',
-          username: 'admin',
-          role: 'ADMIN',
-          fullName: 'Admin',
-          permissions: {} // fixed
-        });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
+      if (error) {
+        toast.error(error.message || 'Invalid credentials');
+      } else if (data.session) {
         toast.success('Welcome back!');
-
         setTimeout(() => {
           router.push('/dashboard');
         }, 500);
-
-      } else {
-        toast.error('Invalid credentials');
       }
-
-    } catch {
-      toast.error('Login failed');
+    } catch (err: any) {
+      toast.error(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -73,16 +70,16 @@ export default function LoginPage() {
 
           <input
             required
-            placeholder="admin"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Username or Email"
+            value={usernameOrEmail}
+            onChange={(e) => setUsernameOrEmail(e.target.value)}
             className="glass-input w-full h-14"
           />
 
           <input
             required
             type="password"
-            placeholder="admin123"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="glass-input w-full h-14"
@@ -90,7 +87,7 @@ export default function LoginPage() {
 
           <button
             disabled={loading}
-            className="glass-button w-full h-14"
+            className="glass-button w-full h-14 flex items-center justify-center"
           >
             {loading
               ? <Loader2 className="animate-spin" />
