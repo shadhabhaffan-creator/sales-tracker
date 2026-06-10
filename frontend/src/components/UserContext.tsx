@@ -46,6 +46,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
+      if (userProfile.status !== 'ACTIVE') {
+        console.warn('User status is inactive:', userProfile.status);
+        await supabase.auth.signOut();
+        return null;
+      }
+
       const { data: userPerms } = await supabase
         .from('Permission')
         .select('*')
