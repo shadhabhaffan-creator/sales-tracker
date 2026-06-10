@@ -9,7 +9,7 @@ export default function QuickActions() {
   const [isOpen, setIsOpen] = useState(false);
 
   const actions = [
-    { icon: ShoppingCart, label: 'New Sale', href: '/sales', color: 'bg-cyan-500' },
+    { icon: ShoppingCart, label: 'New Sale', href: '/sales/new', color: 'bg-cyan-500' },
     { icon: UserPlus, label: 'Add Customer', href: '/customers', color: 'bg-indigo-500' },
     { icon: Receipt, label: 'New Expense', href: '/expenses', color: 'bg-rose-500' },
   ];

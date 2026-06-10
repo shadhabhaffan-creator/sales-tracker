@@ -54,9 +54,23 @@ function translateQuery(query: any) {
   return prismaQuery;
 }
 
+const DEFAULT_POPULATE_PATHS: Record<string, string[]> = {
+  User: ['permissions'],
+  Product: ['variants'],
+  Sale: ['items'],
+  Supplier: ['purchaseHistory'],
+  SupplierPayment: ['paymentsHistory'],
+  Purchase: ['warehouseAllocations'],
+  Lead: ['notes', 'tasks', 'followUps'],
+  Warehouse: ['products.productId']
+};
+
 function getPrismaInclude(modelName: string, populatePaths: string[]) {
   const include: any = {};
-  for (const path of populatePaths) {
+  const defaults = DEFAULT_POPULATE_PATHS[modelName] || [];
+  const mergedPaths = Array.from(new Set([...defaults, ...populatePaths]));
+  
+  for (const path of mergedPaths) {
     if (modelName === 'User') {
       if (path === 'permissions') include.permissions = true;
       if (path === 'activityLog') include.activityLogs = true;
@@ -65,20 +79,25 @@ function getPrismaInclude(modelName: string, populatePaths: string[]) {
     if (modelName === 'Product') {
       if (path === 'supplierId') include.supplier = true;
       if (path === 'warehouseId') include.warehouse = true;
+      if (path === 'variants') include.variants = true;
     }
     if (modelName === 'Sale') {
       if (path === 'customerId') include.customer = true;
-      if (path === 'items.productId') {
-        include.items = include.items || { include: {} };
-        include.items.include.product = true;
+      if (path === 'items' || path === 'items.productId') {
+        include.items = {
+          include: {
+            product: true
+          }
+        };
       }
     }
     if (modelName === 'Settlement') {
       if (path === 'customerId') include.customer = true;
-      if (path === 'saleId') include.sale = true;
+      if (path === 'saleId') include.sale = { include: { items: true } };
     }
     if (modelName === 'Supplier') {
       if (path === 'productsSupplied') include.products = true;
+      if (path === 'purchaseHistory') include.purchaseHistory = true;
     }
     if (modelName === 'SupplierPayment') {
       if (path === 'supplierId') include.supplier = true;
@@ -91,9 +110,12 @@ function getPrismaInclude(modelName: string, populatePaths: string[]) {
       if (path === 'warehouseAllocations') include.warehouseAllocations = true;
     }
     if (modelName === 'Warehouse') {
-      if (path === 'products.productId') {
-        include.products = include.products || { include: {} };
-        include.products.include.product = true;
+      if (path === 'products' || path === 'products.productId') {
+        include.products = {
+          include: {
+            product: true
+          }
+        };
       }
     }
     if (modelName === 'Lead') {
@@ -107,8 +129,23 @@ function getPrismaInclude(modelName: string, populatePaths: string[]) {
   return Object.keys(include).length > 0 ? include : undefined;
 }
 
+function makeMongooseArray(arr: any[]) {
+  const mongooseArr = [...arr];
+  Object.defineProperty(mongooseArr, 'id', {
+    value: function(id: any) {
+      const targetId = String(id);
+      return this.find((item: any) => String(item.id || item._id) === targetId);
+    },
+    enumerable: false,
+    writable: true,
+    configurable: true
+  });
+  return mongooseArr;
+}
+
 function mapPrismaDocToMongoose(doc: any, modelName: string): any {
   if (!doc) return doc;
+  if (doc._isMongooseWrapped) return doc;
   if (Array.isArray(doc)) {
     return doc.map(d => mapPrismaDocToMongoose(d, modelName));
   }
@@ -122,20 +159,26 @@ function mapPrismaDocToMongoose(doc: any, modelName: string): any {
     configurable: true
   });
   
+  Object.defineProperty(clone, '_isMongooseWrapped', {
+    value: true,
+    enumerable: false,
+    writable: false
+  });
+  
   clone.toString = function() { return this.id; };
 
   if (modelName === 'User') {
     if (clone.activityLogs) {
-      clone.activityLog = clone.activityLogs;
+      clone.activityLog = makeMongooseArray(clone.activityLogs);
       delete clone.activityLogs;
     } else {
-      clone.activityLog = [];
+      clone.activityLog = makeMongooseArray([]);
     }
     if (clone.loginHistories) {
-      clone.loginHistory = clone.loginHistories;
+      clone.loginHistory = makeMongooseArray(clone.loginHistories);
       delete clone.loginHistories;
     } else {
-      clone.loginHistory = [];
+      clone.loginHistory = makeMongooseArray([]);
     }
   }
   
@@ -148,8 +191,22 @@ function mapPrismaDocToMongoose(doc: any, modelName: string): any {
       clone.warehouseId = mapPrismaDocToMongoose(clone.warehouse, 'Warehouse');
       delete clone.warehouse;
     }
+    if (clone.variants) {
+      clone.variants = makeMongooseArray(clone.variants.map((v: any) => {
+        const vClone = { ...v };
+        Object.defineProperty(vClone, '_id', {
+          get() { return this.id; },
+          set(val) { this.id = val; },
+          enumerable: true,
+          configurable: true
+        });
+        return vClone;
+      }));
+    } else {
+      clone.variants = makeMongooseArray([]);
+    }
     if (clone.tags) {
-      clone.tags = clone.tags.split(',').filter(Boolean);
+      clone.tags = typeof clone.tags === 'string' ? clone.tags.split(',').filter(Boolean) : clone.tags;
     } else {
       clone.tags = [];
     }
@@ -161,21 +218,22 @@ function mapPrismaDocToMongoose(doc: any, modelName: string): any {
       delete clone.customer;
     }
     if (clone.items) {
-      clone.items = clone.items.map((item: any) => {
+      clone.items = makeMongooseArray(clone.items.map((item: any) => {
         const itemClone = { ...item };
         Object.defineProperty(itemClone, '_id', {
           get() { return this.id; },
           set(val) { this.id = val; },
-          enumerable: true
+          enumerable: true,
+          configurable: true
         });
         if (itemClone.product) {
           itemClone.productId = mapPrismaDocToMongoose(itemClone.product, 'Product');
           delete itemClone.product;
         }
         return itemClone;
-      });
+      }));
     } else {
-      clone.items = [];
+      clone.items = makeMongooseArray([]);
     }
   }
   
@@ -192,18 +250,18 @@ function mapPrismaDocToMongoose(doc: any, modelName: string): any {
   
   if (modelName === 'Supplier') {
     if (clone.products) {
-      clone.productsSupplied = mapPrismaDocToMongoose(clone.products, 'Product');
+      clone.productsSupplied = makeMongooseArray(mapPrismaDocToMongoose(clone.products, 'Product'));
       delete clone.products;
     } else {
-      clone.productsSupplied = [];
+      clone.productsSupplied = makeMongooseArray([]);
     }
     if (clone.purchaseHistory) {
-      clone.purchaseHistory = clone.purchaseHistory.map((h: any) => ({
+      clone.purchaseHistory = makeMongooseArray(clone.purchaseHistory.map((h: any) => ({
         ...h,
         _id: h.id
-      }));
+      })));
     } else {
-      clone.purchaseHistory = [];
+      clone.purchaseHistory = makeMongooseArray([]);
     }
   }
   
@@ -217,12 +275,12 @@ function mapPrismaDocToMongoose(doc: any, modelName: string): any {
       delete clone.product;
     }
     if (clone.paymentsHistory) {
-      clone.paymentsHistory = clone.paymentsHistory.map((h: any) => ({
+      clone.paymentsHistory = makeMongooseArray(clone.paymentsHistory.map((h: any) => ({
         ...h,
         _id: h.id
-      }));
+      })));
     } else {
-      clone.paymentsHistory = [];
+      clone.paymentsHistory = makeMongooseArray([]);
     }
   }
   
@@ -236,32 +294,33 @@ function mapPrismaDocToMongoose(doc: any, modelName: string): any {
       delete clone.product;
     }
     if (clone.warehouseAllocations) {
-      clone.warehouseAllocations = clone.warehouseAllocations.map((a: any) => ({
+      clone.warehouseAllocations = makeMongooseArray(clone.warehouseAllocations.map((a: any) => ({
         ...a,
         _id: a.id
-      }));
+      })));
     } else {
-      clone.warehouseAllocations = [];
+      clone.warehouseAllocations = makeMongooseArray([]);
     }
   }
   
   if (modelName === 'Warehouse') {
     if (clone.products) {
-      clone.products = clone.products.map((p: any) => {
+      clone.products = makeMongooseArray(clone.products.map((p: any) => {
         const pClone = { ...p };
         Object.defineProperty(pClone, '_id', {
           get() { return this.id; },
           set(val) { this.id = val; },
-          enumerable: true
+          enumerable: true,
+          configurable: true
         });
         if (pClone.product) {
           pClone.productId = mapPrismaDocToMongoose(pClone.product, 'Product');
           delete pClone.product;
         }
         return pClone;
-      });
+      }));
     } else {
-      clone.products = [];
+      clone.products = makeMongooseArray([]);
     }
   }
   
@@ -273,19 +332,19 @@ function mapPrismaDocToMongoose(doc: any, modelName: string): any {
       clone.createdBy = mapPrismaDocToMongoose(clone.createdBy, 'User');
     }
     if (clone.notes) {
-      clone.notes = clone.notes.map((n: any) => ({ ...n, _id: n.id }));
+      clone.notes = makeMongooseArray(clone.notes.map((n: any) => ({ ...n, _id: n.id })));
     } else {
-      clone.notes = [];
+      clone.notes = makeMongooseArray([]);
     }
     if (clone.tasks) {
-      clone.tasks = clone.tasks.map((t: any) => ({ ...t, _id: t.id }));
+      clone.tasks = makeMongooseArray(clone.tasks.map((t: any) => ({ ...t, _id: t.id })));
     } else {
-      clone.tasks = [];
+      clone.tasks = makeMongooseArray([]);
     }
     if (clone.followUps) {
-      clone.followUps = clone.followUps.map((f: any) => ({ ...f, _id: f.id }));
+      clone.followUps = makeMongooseArray(clone.followUps.map((f: any) => ({ ...f, _id: f.id })));
     } else {
-      clone.followUps = [];
+      clone.followUps = makeMongooseArray([]);
     }
   }
   
@@ -606,26 +665,36 @@ async function handleUpdateQuery(id: string, updateData: any, modelName: string)
         }
       }
     }
-    delete updateData.$push;
   }
+  
+  const cleanData: any = {};
   
   if (updateData.$set) {
-    updateData = { ...updateData, ...updateData.$set };
-    delete updateData.$set;
+    Object.assign(cleanData, updateData.$set);
   }
   if (updateData.$unset) {
-    delete updateData.$unset;
+    for (const key of Object.keys(updateData.$unset)) {
+      cleanData[key] = null;
+    }
   }
-
-  const cleanData = { ...updateData };
-  delete cleanData._id;
-  delete cleanData.id;
-  delete cleanData.createdAt;
-  delete cleanData.updatedAt;
+  if (updateData.$inc) {
+    for (const [key, val] of Object.entries(updateData.$inc)) {
+      cleanData[key] = {
+        increment: Number(val)
+      };
+    }
+  }
   
-  for (const k of ['activityLog', 'loginHistory', 'variants', 'productsSupplied', 'purchaseHistory', 
-                   'products', 'paymentsHistory', 'warehouseAllocations', 'items', 'notes', 'tasks', 'followUps']) {
-    delete cleanData[k];
+  for (const [key, val] of Object.entries(updateData)) {
+    if (key.startsWith('$')) continue;
+    if (key === '_id' || key === 'id' || key === 'createdAt' || key === 'updatedAt') continue;
+    
+    if (['activityLog', 'loginHistory', 'variants', 'productsSupplied', 'purchaseHistory', 
+         'products', 'paymentsHistory', 'warehouseAllocations', 'items', 'notes', 'tasks', 'followUps'].includes(key)) {
+      continue;
+    }
+    
+    cleanData[key] = val;
   }
 
   if (modelName === 'Product' && Array.isArray(cleanData.tags)) {
@@ -671,27 +740,33 @@ async function updateMany(filter: any, update: any, modelName: string) {
   if (modelName === 'StockMovement') prismaModel = prisma.stockMovement;
   
   const prismaFilter = translateQuery(filter);
+  const cleanData: any = {};
   
-  let updateData = { ...update };
-  if (updateData.$set) {
-    updateData = { ...updateData, ...updateData.$set };
+  if (update.$set) {
+    Object.assign(cleanData, update.$set);
   }
-  delete updateData.$set;
-  delete updateData.$push;
-  
-  if (updateData.$unset) {
-    for (const key of Object.keys(updateData.$unset)) {
-      updateData[key] = null;
+  if (update.$unset) {
+    for (const key of Object.keys(update.$unset)) {
+      cleanData[key] = null;
     }
-    delete updateData.$unset;
+  }
+  if (update.$inc) {
+    for (const [key, val] of Object.entries(update.$inc)) {
+      cleanData[key] = {
+        increment: Number(val)
+      };
+    }
   }
   
-  delete updateData.id;
-  delete updateData._id;
+  for (const [key, val] of Object.entries(update)) {
+    if (key.startsWith('$')) continue;
+    if (key === 'id' || key === '_id') continue;
+    cleanData[key] = val;
+  }
 
   return prismaModel.updateMany({
     where: prismaFilter,
-    data: updateData
+    data: cleanData
   });
 }
 
@@ -858,16 +933,106 @@ export class MongooseModelWrapper {
     return handleUpdateQuery(String(id), update, this.modelName);
   }
 
+  async findOneAndUpdate(filter: any, update: any, options: any = {}) {
+    const cleanFilter: any = {};
+    let variantId: string | null = null;
+    let variantStockMin: number | null = null;
+    
+    for (const [key, val] of Object.entries(filter)) {
+      if (key === '_id' || key === 'id') {
+        cleanFilter.id = String(val);
+      } else if (key === 'variants._id' || key === 'variants.id') {
+        variantId = String(val);
+      } else if (key === 'variants.stock') {
+        if (val && typeof val === 'object' && '$gte' in val) {
+          variantStockMin = Number((val as any).$gte);
+        }
+      } else {
+        cleanFilter[key] = val;
+      }
+    }
+    
+    const doc = await this.findOne(cleanFilter);
+    if (!doc) return null;
+    
+    if (variantId) {
+      const variant = await prisma.variant.findUnique({
+        where: { id: variantId }
+      });
+      if (!variant || variant.productId !== doc.id) return null;
+      if (variantStockMin !== null && variant.stock < variantStockMin) return null;
+    }
+    
+    const incObj = update.$inc || {};
+    const setObj = update.$set || {};
+    
+    let variantUpdateVal: number | null = null;
+    for (const [key, val] of Object.entries(incObj)) {
+      if (key.startsWith('variants.$.') || key.startsWith('variants.')) {
+        if (key.endsWith('.stock')) {
+          variantUpdateVal = Number(val);
+        }
+      }
+    }
+    
+    if (variantId && variantUpdateVal !== null) {
+      await prisma.variant.update({
+        where: { id: variantId },
+        data: {
+          stock: {
+            increment: variantUpdateVal
+          }
+        }
+      });
+    }
+    
+    const productUpdateData: any = {};
+    for (const [key, val] of Object.entries(incObj)) {
+      if (key.startsWith('variants.')) continue;
+      productUpdateData[key] = {
+        increment: Number(val)
+      };
+    }
+    
+    const allSets = { ...update, ...setObj };
+    for (const [key, val] of Object.entries(allSets)) {
+      if (key.startsWith('$')) continue;
+      if (key.startsWith('variants.')) continue;
+      if (key === 'id' || key === '_id') continue;
+      productUpdateData[key] = val;
+    }
+    
+    if (Object.keys(productUpdateData).length > 0) {
+      let prismaModel: any = (prisma as any)[this.modelName.charAt(0).toLowerCase() + this.modelName.slice(1)];
+      if (this.modelName === 'SupplierPayment') prismaModel = prisma.supplierPayment;
+      if (this.modelName === 'StockMovement') prismaModel = prisma.stockMovement;
+      
+      await prismaModel.update({
+        where: { id: doc.id },
+        data: productUpdateData
+      });
+    }
+    
+    return this.findById(doc.id);
+  }
+
   async findByIdAndDelete(id: string) {
     if (!id) return null;
     let prismaModel: any = (prisma as any)[this.modelName.charAt(0).toLowerCase() + this.modelName.slice(1)];
     if (this.modelName === 'SupplierPayment') prismaModel = prisma.supplierPayment;
     if (this.modelName === 'StockMovement') prismaModel = prisma.stockMovement;
     
-    const deleted = await prismaModel.delete({
-      where: { id: String(id) }
-    });
-    return mapPrismaDocToMongoose(deleted, this.modelName);
+    try {
+      const deleted = await prismaModel.delete({
+        where: { id: String(id) }
+      });
+      return mapPrismaDocToMongoose(deleted, this.modelName);
+    } catch (e: any) {
+      if (e.code === 'P2025' || e.message?.includes('Record to delete does not exist')) {
+        return null;
+      }
+      throw e;
+    }
   }
 
   async create(data: any): Promise<any> {
@@ -948,6 +1113,7 @@ export function createModelMock(modelName: string) {
     findOne: (query: any) => modelWrapper.findOne(query),
     findById: (id: string) => modelWrapper.findById(id),
     findByIdAndUpdate: (id: string, update: any, options: any) => modelWrapper.findByIdAndUpdate(id, update, options),
+    findOneAndUpdate: (filter: any, update: any, options: any) => modelWrapper.findOneAndUpdate(filter, update, options),
     findByIdAndDelete: (id: string) => modelWrapper.findByIdAndDelete(id),
     create: (data: any) => modelWrapper.create(data),
     deleteMany: (filter: any) => modelWrapper.deleteMany(filter),
