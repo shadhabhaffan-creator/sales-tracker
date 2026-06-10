@@ -23,16 +23,16 @@ export default function TopNavbar() {
   }, []);
 
   return (
-    <nav className="flex items-center justify-between mb-6 relative z-40">
+    <nav className="flex items-center justify-between mb-4 sm:mb-6 relative z-40 gap-3">
       {/* Global Search */}
-      <div className="relative group max-w-md w-full">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-cyan-400 transition-colors">
-          <Search size={18} />
+      <div className="relative group max-w-[130px] xxs:max-w-[180px] xs:max-w-[240px] sm:max-w-md w-full">
+        <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-cyan-400 transition-colors">
+          <Search size={16} />
         </div>
         <input 
           type="text" 
-          placeholder="Search for invoices, customers, products..." 
-          className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:bg-white/10 transition-all placeholder:text-gray-500"
+          placeholder="Search..." 
+          className="w-full bg-white/5 border border-white/10 rounded-2xl py-2 sm:py-3 pl-9 sm:pl-12 pr-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:bg-white/10 transition-all placeholder:text-gray-500 text-white"
         />
       </div>
 

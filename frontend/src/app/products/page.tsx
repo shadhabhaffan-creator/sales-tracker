@@ -389,8 +389,8 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* Products Table */}
-        <div className="glass-panel rounded-[2.5rem] overflow-hidden border border-white/10">
+        {/* Products Table (Desktop) */}
+        <div className="hidden md:block glass-panel rounded-[2.5rem] overflow-hidden border border-white/10">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
@@ -414,7 +414,7 @@ export default function ProductsPage() {
 
                   return (
                     <tr 
-                      key={product._id} 
+                      key={product._id || product.id} 
                       className="hover:bg-white/5 transition-colors text-sm group cursor-pointer"
                       onClick={() => setSelectedProduct(product)}
                     >
@@ -544,7 +544,7 @@ export default function ProductsPage() {
                           </button>
                           {isAdmin && (
                             <button 
-                              onClick={() => { handleDelete(product._id); }}
+                              onClick={() => { handleDelete(product._id || product.id); }}
                               className="p-3 bg-white/5 hover:bg-rose-500/10 rounded-xl text-gray-400 hover:text-rose-400 transition-all border border-transparent hover:border-rose-500/20 cursor-pointer"
                             >
                               <Trash2 size={16} />
@@ -560,6 +560,154 @@ export default function ProductsPage() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Product Cards (Mobile) */}
+        <div className="block md:hidden space-y-4">
+          {loading ? (
+            <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-cyan-400 w-10 h-10" /></div>
+          ) : filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => {
+              const profit = product.sellingPrice - product.costPrice;
+              const margin = product.sellingPrice > 0 ? (profit / product.sellingPrice) * 100 : 0;
+              const isLow = product.stock < (product.lowStockThreshold || 10);
+              const isOut = product.stock === 0;
+
+              return (
+                <div 
+                  key={product._id || product.id} 
+                  onClick={() => setSelectedProduct(product)}
+                  className="glass-panel p-5 rounded-2xl border border-white/5 space-y-4 cursor-pointer hover:border-cyan-500/20 transition-all"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/5 overflow-hidden shrink-0">
+                      {product.image ? (
+                        <img src={product.image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="text-gray-600" size={24} />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-white truncate text-sm">{product.name}</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{product.sku || 'NO-SKU'}</p>
+                    </div>
+                    <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider ${
+                      isOut ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                      isLow ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                      'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    }`}>
+                      {isOut ? 'OUT' : isLow ? 'LOW' : 'IN'}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 pt-3 border-t border-white/5 text-xs">
+                    <div>
+                      <p className="text-[9px] text-gray-500 font-black uppercase tracking-tighter">Stock</p>
+                      <p className={`font-bold mt-0.5 ${isOut ? 'text-rose-400' : isLow ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {product.stock} {product.unit || 'Units'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-gray-500 font-black uppercase tracking-tighter">Cost / Price</p>
+                      <p className="font-bold text-gray-300 mt-0.5">
+                        {formatPrice(product.costPrice)} / {formatPrice(product.sellingPrice)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] text-gray-500 font-black uppercase tracking-tighter">Margin</p>
+                      <p className="font-bold text-emerald-400 mt-0.5">
+                        +{margin.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                    <button 
+                      onClick={() => {
+                        setEditingProduct(product);
+                        setFormData({
+                          name: product.name,
+                          sku: product.sku || '',
+                          category: product.category || '',
+                          stock: product.stock,
+                          costPrice: product.costPrice,
+                          sellingPrice: product.sellingPrice,
+                          image: product.image || '',
+                          unit: product.unit || 'UNIT',
+                          supplierId: product.supplierId?._id || product.supplierId || ''
+                        });
+                        
+                        // Pre-populate allocations
+                        const currentAllocations: any[] = [];
+                        warehouses.forEach(wh => {
+                          const found = (wh.products || []).find((p: any) => p.productId?._id === product._id || p.productId === product._id);
+                          if (found && !found.variantId) {
+                            currentAllocations.push({
+                              warehouseId: wh._id,
+                              quantity: found.stock
+                            });
+                          }
+                        });
+                        setFormAllocations(currentAllocations);
+
+                        // Pre-populate variants
+                        if (product.variants && product.variants.length > 0) {
+                          const loadedVariants = product.variants.map((v: any) => {
+                            const allocs: any[] = [];
+                            warehouses.forEach(wh => {
+                              const match = (wh.products || []).find((wp: any) => 
+                                (wp.productId?._id === product._id || wp.productId === product._id) && 
+                                wp.variantId === v._id
+                              );
+                              if (match) {
+                                allocs.push({
+                                  warehouseId: wh._id,
+                                  quantity: match.stock
+                                });
+                              }
+                            });
+                            return {
+                              _id: v._id,
+                              name: v.name,
+                              sku: v.sku || '',
+                              costPrice: v.costPrice,
+                              sellingPrice: v.sellingPrice,
+                              stock: v.stock,
+                              unit: v.unit || 'PIECE',
+                              supplierId: v.supplierId?._id || v.supplierId || '',
+                              allocations: allocs
+                            };
+                          });
+                          setFormVariants(loadedVariants);
+                        } else {
+                          setFormVariants([]);
+                        }
+                        
+                        setIsModalOpen(true);
+                      }}
+                      className="p-2.5 bg-white/5 hover:bg-cyan-500/10 text-gray-400 hover:text-cyan-400 rounded-xl transition-colors border border-white/5 cursor-pointer flex items-center justify-center min-h-[44px] min-w-[44px]"
+                      title="Edit Product"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    {isAdmin && (
+                      <button 
+                        onClick={() => handleDelete(product._id || product.id)}
+                        className="p-2.5 bg-white/5 hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 rounded-xl transition-colors border border-transparent hover:border-rose-500/20 cursor-pointer flex items-center justify-center min-h-[44px] min-w-[44px]"
+                        title="Delete Product"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="glass-panel p-10 text-center text-gray-500 italic text-sm font-bold uppercase tracking-widest border border-white/5">
+              No products found
+            </div>
+          )}
         </div>
 
         {/* Product Detail Modal */}

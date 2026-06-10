@@ -230,8 +230,8 @@ export default function SalesPage() {
     </select>
   </div>
 
-  {/* Ledger Table */}
-  <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden">
+  {/* Ledger Table (Desktop) */}
+  <div className="hidden md:block glass-panel rounded-3xl border border-white/10 overflow-hidden">
     <div className="overflow-x-auto">
       <table className="w-full text-left border-collapse">
         <thead>
@@ -265,7 +265,7 @@ export default function SalesPage() {
               const status = sale.status || 'PAID';
               
               let statusColor = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
-              if (status === 'DUE') statusColor = 'bg-rose-500/10 border-rose-500/20 text-rose-400';
+              if (status === 'DUE' || status === 'UNPAID') statusColor = 'bg-rose-500/10 border-rose-500/20 text-rose-400';
               else if (status === 'PARTIAL') statusColor = 'bg-amber-500/10 border-amber-500/20 text-amber-400';
 
               return (
@@ -313,6 +313,84 @@ export default function SalesPage() {
         </tbody>
       </table>
     </div>
+  </div>
+
+  {/* Ledger Cards (Mobile) */}
+  <div className="block md:hidden space-y-4">
+    {loading ? (
+      <div className="py-20 text-center flex flex-col items-center justify-center gap-3 text-cyan-400">
+        <Loader2 className="animate-spin" size={24} />
+        <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Loading sales history...</span>
+      </div>
+    ) : filteredSales.length > 0 ? (
+      filteredSales.map((sale) => {
+        const invId = sale.invoiceId || `#${String(sale._id || sale.id || '').slice(-6).toUpperCase()}`;
+        const custName = sale.customerId?.name || 'Guest';
+        const saleDate = sale.date ? format(new Date(sale.date), 'MMM dd, yyyy') : '-';
+        const amount = sale.totalAmount || 0;
+        const payment = sale.paymentType || 'CASH';
+        const status = sale.status || 'PAID';
+        
+        let statusColor = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
+        if (status === 'DUE' || status === 'UNPAID') statusColor = 'bg-rose-500/10 border-rose-500/20 text-rose-400';
+        else if (status === 'PARTIAL') statusColor = 'bg-amber-500/10 border-amber-500/20 text-amber-400';
+
+        return (
+          <div key={sale._id || sale.id} className="glass-panel p-5 rounded-2xl border border-white/5 space-y-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-bold text-white font-mono text-sm">{invId}</p>
+                <p className="text-gray-400 text-xs mt-0.5">{saleDate}</p>
+              </div>
+              <span className={`px-2 py-0.5 border rounded-lg text-[9px] font-black uppercase tracking-wider ${statusColor}`}>
+                {status}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t border-white/5">
+              <div>
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Customer</p>
+                <p className="text-sm font-bold text-white mt-0.5">{custName}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Total Amount</p>
+                <p className="text-sm font-black text-cyan-400 mt-0.5">{formatPrice(amount)}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-3 border-t border-white/5">
+              <div>
+                <span className="text-[10px] bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-gray-300 font-black uppercase tracking-wider">
+                  {payment}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedSale(sale)}
+                  className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl transition-colors border border-white/5 cursor-pointer flex items-center justify-center min-h-[44px] min-w-[44px]"
+                  title="View Invoice"
+                >
+                  <Eye size={16} />
+                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDelete(sale._id || sale.id)}
+                    className="p-2.5 bg-white/5 hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 rounded-xl transition-colors border border-transparent hover:border-rose-500/20 cursor-pointer flex items-center justify-center min-h-[44px] min-w-[44px]"
+                    title="Delete Sale"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })
+    ) : (
+      <div className="glass-panel p-10 text-center text-gray-500 italic text-sm font-bold uppercase tracking-widest border border-white/5">
+        No sales records found
+      </div>
+    )}
   </div>
 
 
