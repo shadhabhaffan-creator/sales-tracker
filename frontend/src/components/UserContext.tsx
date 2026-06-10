@@ -1,8 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+
+const PUBLIC_PATHS = ['/login', '/reset-password'];
 
 interface User {
   id: string;
@@ -26,6 +28,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
+  const isPublicPath = PUBLIC_PATHS.some((p) => pathname?.startsWith(p));
 
   const fetchProfile = async (userId: string, email: string | undefined): Promise<User | null> => {
     try {
@@ -86,9 +90,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     // Safety net: never spin forever if Supabase is unreachable
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 5000);
+    }, 3000);
 
-    const PUBLIC_PATHS = ['/login', '/reset-password'];
     const isPublicPath = () => PUBLIC_PATHS.some((p) => window.location.pathname.startsWith(p));
 
     const syncSession = async () => {
@@ -160,7 +163,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <UserContext.Provider value={{ user, loading, logout, isAdmin, hasPermission }}>
-      {loading ? (
+      {/* Never block public pages (login, reset-password) with the session spinner */}
+      {loading && !isPublicPath ? (
         <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-950 relative overflow-hidden">
           <div className="absolute inset-0 bg-cyan-500/5 blur-[100px] rounded-full scale-150 animate-pulse" />
           <div className="relative z-10 flex flex-col items-center gap-6">
