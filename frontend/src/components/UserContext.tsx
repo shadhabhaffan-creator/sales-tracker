@@ -83,6 +83,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Safety net: never spin forever if Supabase is unreachable
+    const safetyTimer = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 5000);
+
+    const PUBLIC_PATHS = ['/login', '/reset-password'];
+    const isPublicPath = () => PUBLIC_PATHS.some((p) => window.location.pathname.startsWith(p));
+
     const syncSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -114,18 +122,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         const profile = await fetchProfile(session.user.id, session.user.email);
         setUser(profile);
         setLoading(false);
-        if (window.location.pathname === '/login') {
+        // Only redirect away from login after successful sign-in
+        if (isPublicPath()) {
           router.push('/dashboard');
         }
       } else {
         setUser(null);
         setLoading(false);
-        router.push('/login');
+        // Only redirect to login if on a protected route
+        if (!isPublicPath()) {
+          router.push('/login');
+        }
       }
     });
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, [router]);
