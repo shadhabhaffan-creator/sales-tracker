@@ -7,7 +7,7 @@ import {
   Warehouse, Plus, Search, Filter, Trash2, Edit2, Loader2, X, Check,
   ArrowRightLeft, ArrowUpRight, ArrowDownRight, Layers, User, Phone, 
   MapPin, Clipboard, Settings, Lock, CheckSquare, Clock, BarChart3,
-  Calendar, Grid, List, ShieldCheck, Activity, AlertTriangle, Truck
+  Calendar, Grid, List, ShieldCheck, Activity, AlertTriangle, Truck, TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUser } from '@/components/UserContext';
@@ -34,6 +34,12 @@ export default function WarehousesPage() {
   const [editingWarehouse, setEditingWarehouse] = useState<any>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<any>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+
+  // Capacity increase modal
+  const [isCapacityModalOpen, setIsCapacityModalOpen] = useState(false);
+  const [capacityTarget, setCapacityTarget] = useState<any>(null);
+  const [capacityAddAmount, setCapacityAddAmount] = useState(0);
+  const [capacityLoading, setCapacityLoading] = useState(false);
 
   // Form Fields State
   const [formData, setFormData] = useState({
@@ -245,6 +251,36 @@ export default function WarehousesPage() {
     }
   };
 
+  const openCapacityModal = (e: React.MouseEvent, wh: any) => {
+    e.stopPropagation();
+    setCapacityTarget(wh);
+    setCapacityAddAmount(0);
+    setIsCapacityModalOpen(true);
+  };
+
+  const handleIncreaseCapacity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!capacityTarget || capacityAddAmount <= 0) {
+      toast.error('Please enter a valid capacity increase amount');
+      return;
+    }
+    setCapacityLoading(true);
+    try {
+      const newCapacity = (capacityTarget.capacity || 0) + capacityAddAmount;
+      await fetchWithAuth(`/warehouses/${capacityTarget._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ capacity: newCapacity })
+      });
+      toast.success(`Capacity increased by ${capacityAddAmount} units (New total: ${newCapacity})`);
+      setIsCapacityModalOpen(false);
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update capacity');
+    } finally {
+      setCapacityLoading(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-8 pb-10">
@@ -443,6 +479,13 @@ export default function WarehousesPage() {
                       {isAdmin && (
                         <>
                           <button 
+                            onClick={(e) => openCapacityModal(e, wh)}
+                            className="p-2 hover:bg-emerald-500/10 rounded-lg text-gray-400 hover:text-emerald-400 transition-all cursor-pointer"
+                            title="Increase Capacity"
+                          >
+                            <TrendingUp size={13} />
+                          </button>
+                          <button 
                             onClick={(e) => openEditModal(e, wh)}
                             className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer"
                           >
@@ -503,6 +546,13 @@ export default function WarehousesPage() {
                         <div className="flex justify-end gap-2">
                           {isAdmin && (
                             <>
+                              <button 
+                                onClick={(e) => openCapacityModal(e, wh)}
+                                className="btn-secondary btn-sm flex items-center justify-center p-0 w-9"
+                                title="Increase Capacity"
+                              >
+                                <TrendingUp size={13} className="text-emerald-400" />
+                              </button>
                               <button 
                                 onClick={(e) => openEditModal(e, wh)}
                                 className="btn-secondary btn-sm flex items-center justify-center p-0 w-9"
@@ -951,6 +1001,77 @@ export default function WarehousesPage() {
                   )}
                 </div>
 
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Increase Capacity Modal */}
+        <AnimatePresence>
+          {isCapacityModalOpen && capacityTarget && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCapacityModalOpen(false)} className="absolute inset-0 bg-black/85 backdrop-blur-md" />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+                animate={{ opacity: 1, scale: 1, y: 0 }} 
+                exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+                className="glass-panel w-full max-w-md p-8 rounded-2xl relative z-10 border border-white/10 shadow-2xl"
+              >
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                      <TrendingUp size={18} className="text-emerald-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black text-white tracking-tight uppercase">Increase Capacity</h2>
+                      <p className="text-[10px] text-gray-500 font-bold mt-0.5">{capacityTarget.name} · {capacityTarget.warehouseId}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsCapacityModalOpen(false)} className="text-gray-400 hover:text-white cursor-pointer"><X size={20} /></button>
+                </div>
+
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/5 mb-6 grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Current Capacity</p>
+                    <p className="text-2xl font-black text-white">{capacityTarget.capacity || 0} <span className="text-xs text-gray-500">units</span></p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Current Stock</p>
+                    <p className="text-2xl font-black text-cyan-400">{capacityTarget.currentStock || 0} <span className="text-xs text-gray-500">used</span></p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleIncreaseCapacity} className="space-y-5">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Add Capacity Units *</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      placeholder="e.g. 500"
+                      className="w-full glass-input font-bold text-lg"
+                      value={capacityAddAmount || ''}
+                      onChange={(e) => setCapacityAddAmount(Math.max(0, Number(e.target.value) || 0))}
+                    />
+                    {capacityAddAmount > 0 && (
+                      <p className="text-[10px] text-emerald-400 font-bold ml-1 mt-1">
+                        New total: {(capacityTarget.capacity || 0) + capacityAddAmount} units
+                      </p>
+                    )}
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={capacityLoading || capacityAddAmount <= 0}
+                    className="btn-primary w-full"
+                  >
+                    {capacityLoading ? (
+                      <><Loader2 size={16} className="animate-spin" /> Updating...</>
+                    ) : (
+                      <><TrendingUp size={16} /> Increase by {capacityAddAmount || '...'} Units</>
+                    )}
+                  </button>
+                </form>
               </motion.div>
             </div>
           )}

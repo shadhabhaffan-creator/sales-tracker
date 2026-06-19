@@ -1182,27 +1182,29 @@ export async function fetchWithAuth(
   // 8. WAREHOUSES
   if (resource === 'warehouses') {
     if (parts[1] === 'movements' && method === 'GET') {
+      // Fetch StockMovement without embedding Warehouse to avoid PostgREST ambiguity
+      // (3 FK columns point to Warehouse: warehouseId, sourceWarehouseId, destinationWarehouseId)
       const { data, error } = await supabase
         .from('StockMovement')
         .select(`
           *,
-          product:Product(*, supplier:Supplier(*)),
-          warehouse:Warehouse!warehouseId(*),
-          sourceWarehouse:Warehouse!sourceWarehouseId(*),
-          destinationWarehouse:Warehouse!destinationWarehouseId(*)
+          product:Product(*, supplier:Supplier(*))
         `)
         .order('createdAt', { ascending: false });
 
       if (error) throw new Error(error.message);
-      return mapIds(data?.map(m => ({
+
+      // Fetch all warehouses separately and join manually
+      const { data: allWarehouses } = await supabase.from('Warehouse').select('*');
+      const warehouseMap: Record<string, any> = {};
+      (allWarehouses || []).forEach((w: any) => { warehouseMap[w.id] = mapIds(w); });
+
+      return mapIds((data || []).map((m: any) => ({
         ...m,
-        productId: m.product ? {
-          ...m.product,
-          supplierId: m.product.supplier
-        } : null,
-        warehouseId: m.warehouse || null,
-        sourceWarehouseId: m.sourceWarehouse || null,
-        destinationWarehouseId: m.destinationWarehouse || null
+        productId: m.product ? { ...m.product, supplierId: m.product.supplier } : null,
+        warehouseId: m.warehouseId ? (warehouseMap[m.warehouseId] || null) : null,
+        sourceWarehouseId: m.sourceWarehouseId ? (warehouseMap[m.sourceWarehouseId] || null) : null,
+        destinationWarehouseId: m.destinationWarehouseId ? (warehouseMap[m.destinationWarehouseId] || null) : null
       })));
     }
 
@@ -1277,6 +1279,15 @@ export async function fetchWithAuth(
           contactNumber: body.contactNumber || null,
           capacity: body.capacity || 0
         })
+        .eq('id', id);
+      if (error) throw new Error(error.message);
+      return { success: true };
+    }
+    if (method === 'PATCH') {
+      // Capacity-only update
+      const id = parts[1] || body.id || body._id;
+      const { error } = await supabase.from('Warehouse')
+        .update({ capacity: body.capacity })
         .eq('id', id);
       if (error) throw new Error(error.message);
       return { success: true };
@@ -1855,27 +1866,28 @@ export async function fetchWithAuth(
 
   // 13. STOCK MOVEMENTS
   if (resource === 'stock-movements' && method === 'GET') {
+    // Fetch without embedding Warehouse to avoid PostgREST multi-FK ambiguity
     const { data, error } = await supabase
       .from('StockMovement')
       .select(`
         *,
-        product:Product(*, supplier:Supplier(*)),
-        warehouse:Warehouse!warehouseId(*),
-        sourceWarehouse:Warehouse!sourceWarehouseId(*),
-        destinationWarehouse:Warehouse!destinationWarehouseId(*)
+        product:Product(*, supplier:Supplier(*))
       `)
       .order('createdAt', { ascending: false });
 
     if (error) throw new Error(error.message);
-    return mapIds(data?.map(m => ({
+
+    // Fetch all warehouses separately and join manually
+    const { data: allWarehouses } = await supabase.from('Warehouse').select('*');
+    const warehouseMap: Record<string, any> = {};
+    (allWarehouses || []).forEach((w: any) => { warehouseMap[w.id] = mapIds(w); });
+
+    return mapIds((data || []).map((m: any) => ({
       ...m,
-      productId: m.product ? {
-        ...m.product,
-        supplierId: m.product.supplier
-      } : null,
-      warehouseId: m.warehouse || null,
-      sourceWarehouseId: m.sourceWarehouse || null,
-      destinationWarehouseId: m.destinationWarehouse || null
+      productId: m.product ? { ...m.product, supplierId: m.product.supplier } : null,
+      warehouseId: m.warehouseId ? (warehouseMap[m.warehouseId] || null) : null,
+      sourceWarehouseId: m.sourceWarehouseId ? (warehouseMap[m.sourceWarehouseId] || null) : null,
+      destinationWarehouseId: m.destinationWarehouseId ? (warehouseMap[m.destinationWarehouseId] || null) : null
     })));
   }
 
