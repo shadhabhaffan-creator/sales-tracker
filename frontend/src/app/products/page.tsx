@@ -473,7 +473,7 @@ export default function ProductsPage() {
                         <p className={`text-lg font-black ${isOut ? 'text-rose-500' : isLow ? 'text-amber-500' : 'text-emerald-500'}`}>
                           {product.stock}
                         </p>
-                        <p className="text-[10px] text-gray-600 uppercase font-black tracking-widest">{product.unit || 'Units'}</p>
+                        <p className="text-[10px] text-gray-600 uppercase font-black tracking-widest">{product.type === 'CHILD' ? 'Units' : (product.type === 'PARENT' && (product.unit === 'LITER' || product.unit === 'UNIT') ? 'L' : (product.unit === 'LITER' ? 'L' : (product.unit === 'UNIT' ? 'Units' : (product.unit || 'L'))))}</p>
                       </td>
                       <td className="p-6">
                         <div className="space-y-1">
@@ -647,7 +647,7 @@ export default function ProductsPage() {
                     <div>
                       <p className="text-[9px] text-gray-500 font-black uppercase tracking-tighter">Stock</p>
                       <p className={`font-bold mt-0.5 ${isOut ? 'text-rose-400' : isLow ? 'text-amber-400' : 'text-emerald-400'}`}>
-                        {product.stock} {product.unit || 'Units'}
+                        {product.stock} {product.type === 'CHILD' ? 'Units' : (product.type === 'PARENT' && (product.unit === 'LITER' || product.unit === 'UNIT') ? 'L' : (product.unit === 'LITER' ? 'L' : (product.unit === 'UNIT' ? 'Units' : (product.unit || 'L'))))}
                       </p>
                     </div>
                     <div>

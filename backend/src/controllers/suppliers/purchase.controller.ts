@@ -88,7 +88,14 @@ export const createPurchase = async (req: Request, res: Response) => {
         const parentId = product.parent_id;
         const parentProduct = await Product.findById(parentId);
         if (parentProduct) {
-          parentProduct.stock += parsedQty * product.conversion_quantity;
+          const bulkQtyAdded = parsedQty * product.conversion_quantity;
+          if (parentProduct.variants && parentProduct.variants.length > 0) {
+            parentProduct.variants[0].stock = Number((parentProduct.variants[0].stock + bulkQtyAdded).toFixed(4));
+            parentProduct.markModified('variants');
+            parentProduct.stock = Number(parentProduct.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0).toFixed(4));
+          } else {
+            parentProduct.stock = Number((parentProduct.stock + bulkQtyAdded).toFixed(4));
+          }
           await parentProduct.save();
 
           const prisma = require('../../models/prisma').prisma;
@@ -170,17 +177,23 @@ export const createPurchase = async (req: Request, res: Response) => {
           const parentId = product.parent_id;
           const parentProduct = await Product.findById(parentId);
           if (parentProduct) {
-            const parentAllocQty = allocQty * product.conversion_quantity;
+            const parentAllocQty = Number((allocQty * product.conversion_quantity).toFixed(4));
+            const parentVariantId = parentProduct.variants && parentProduct.variants.length > 0
+              ? parentProduct.variants[0]._id
+              : null;
             
             const wProdIdx = warehouse.products.findIndex(
-              (p: any) => p.productId.toString() === parentProduct._id.toString() && !p.variantId
+              (p: any) => p.productId.toString() === parentProduct._id.toString() && 
+                (parentVariantId ? String(p.variantId) === String(parentVariantId) : !p.variantId)
             );
 
             if (wProdIdx !== -1) {
-              warehouse.products[wProdIdx].stock += parentAllocQty;
+              warehouse.products[wProdIdx].stock = Number((warehouse.products[wProdIdx].stock + parentAllocQty).toFixed(4));
             } else {
               warehouse.products.push({
                 productId: parentProduct._id,
+                variantId: parentVariantId || undefined,
+                variantName: parentVariantId ? parentProduct.variants[0].name : undefined,
                 stock: parentAllocQty
               });
             }

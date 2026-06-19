@@ -96,17 +96,18 @@ export const createSale = async (req: Request, res: Response) => {
             if (remainingDeduction <= 0) break;
             const deductQty = Math.min(v.stock || 0, remainingDeduction);
             if (deductQty > 0) {
-              v.stock -= deductQty;
+              v.stock = Math.max(0, Number((v.stock - deductQty).toFixed(4)));
               remainingDeduction -= deductQty;
             }
           }
           if (remainingDeduction > 0) {
-            parentProduct.variants[0].stock -= remainingDeduction;
+            parentProduct.variants[0].stock = Number((parentProduct.variants[0].stock - remainingDeduction).toFixed(4));
           }
+          parentProduct.markModified('variants');
           // Recalculate parentProduct.stock
-          parentProduct.stock = parentProduct.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+          parentProduct.stock = Number(parentProduct.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0).toFixed(4));
         } else {
-          parentProduct.stock -= requiredQty;
+          parentProduct.stock = Math.max(0, Number((parentProduct.stock - requiredQty).toFixed(4)));
         }
         await parentProduct.save();
 
@@ -279,10 +280,11 @@ export const deleteSale = async (req: Request, res: Response) => {
               const restoredQty = item.quantity * product.conversion_quantity;
               
               if (parentProduct.variants && parentProduct.variants.length > 0) {
-                parentProduct.variants[0].stock += restoredQty;
-                parentProduct.stock = parentProduct.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+                parentProduct.variants[0].stock = Number((parentProduct.variants[0].stock + restoredQty).toFixed(4));
+                parentProduct.markModified('variants');
+                parentProduct.stock = Number(parentProduct.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0).toFixed(4));
               } else {
-                parentProduct.stock += restoredQty;
+                parentProduct.stock = Number((parentProduct.stock + restoredQty).toFixed(4));
               }
               await parentProduct.save();
 

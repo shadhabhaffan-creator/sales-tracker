@@ -107,82 +107,96 @@ export default function NewSalePage() {
         }
         return prev.map(item => 
           (item.productId === product.productId && item.variantId === product.variantId)
-            ? { ...item, quantity: item.quantity + 1 } 
-            : item
-        );
-      }
-      return [...prev, { 
-        productId: product.productId, 
-        variantId: product.variantId,
-        name: product.name, 
-        quantity: 1, 
-        costPrice: product.costPrice,
-        sellingPrice: product.sellingPrice,
-        stock: product.stock,
-        unit: product.unit || 'UNIT'
-      }];
-    });
-  };
-
-  const removeFromCart = (productId: string, variantId: string | null) => {
-    setCart(prev => prev.filter(item => 
-      !(item.productId === productId && item.variantId === variantId)
-    ));
-  };
-
-  const updateQuantity = (productId: string, variantId: string | null, value: string) => {
-    const qty = parseFloat(value);
-    setCart(prev => prev.map(item => {
-      if (item.productId === productId && item.variantId === variantId) {
-        if (isNaN(qty) || qty < 0) return { ...item, quantity: 0 };
-        if (qty > item.stock) {
-          toast.error('Insufficient stock');
-          return { ...item, quantity: item.stock };
-        }
-        return { ...item, quantity: qty };
-      }
-      return item;
-    }));
-  };
-
-  const subtotal = cart.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
-  
-  const discountVal = parseFloat(discountValue) || 0;
-  const discountAmount = discountType === 'PERCENT' ? (subtotal * (discountVal / 100)) : discountVal;
-  const total = Math.max(0, subtotal - discountAmount);
-
-  const handleSubmit = async () => {
-    if (cart.length === 0) {
-      toast.error('No items in checkout');
-      return;
-    }
-    if (paymentType === 'CREDIT' && !selectedCustomer) {
-      toast.error('A customer must be selected for credit transactions');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      await fetchWithAuth('/sales', {
-        method: 'POST',
-        body: JSON.stringify({
-          items: cart,
-          paymentType,
-          transactionId: (paymentType === 'UPI' || paymentType === 'BANK') ? transactionId : '',
-          customerId: selectedCustomer?._id || null,
-          discountType,
-          discountValue: discountVal,
-        }),
-      });
-
-      toast.success('Sale processed successfully');
-      router.push('/sales');
-    } catch (error: any) {
-      toast.error(error.message || 'Transaction failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+             ? { ...item, quantity: item.quantity + 1 } 
+             : item
+         );
+       }
+       return [...prev, { 
+         productId: product.productId, 
+         variantId: product.variantId,
+         name: product.name, 
+         quantity: 1, 
+         costPrice: product.costPrice,
+         sellingPrice: product.sellingPrice,
+         stock: product.stock,
+         unit: product.type === 'CHILD' ? 'Unit' : (product.type === 'PARENT' && (product.unit === 'LITER' || product.unit === 'UNIT') ? 'L' : (product.unit === 'LITER' ? 'L' : (product.unit === 'UNIT' ? 'Unit' : (product.unit || 'Unit'))))
+       }];
+     });
+   };
+ 
+   const removeFromCart = (productId: string, variantId: string | null) => {
+     setCart(prev => prev.filter(item => 
+       !(item.productId === productId && item.variantId === variantId)
+     ));
+   };
+ 
+   const updateQuantity = (productId: string, variantId: string | null, value: string) => {
+     const qty = parseFloat(value);
+     setCart(prev => prev.map(item => {
+       if (item.productId === productId && item.variantId === variantId) {
+         if (isNaN(qty) || qty < 0) return { ...item, quantity: 0 };
+         if (qty > item.stock) {
+           toast.error('Insufficient stock');
+           return { ...item, quantity: item.stock };
+         }
+         return { ...item, quantity: qty };
+       }
+       return item;
+     }));
+   };
+ 
+   const subtotal = cart.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
+   
+   const discountVal = parseFloat(discountValue) || 0;
+   const discountAmount = discountType === 'PERCENT' ? (subtotal * (discountVal / 100)) : discountVal;
+   const total = Math.max(0, subtotal - discountAmount);
+ 
+   const handleSubmit = async () => {
+     if (cart.length === 0) {
+       toast.error('No items in checkout');
+       return;
+     }
+     if (paymentType === 'CREDIT' && !selectedCustomer) {
+       toast.error('A customer must be selected for credit transactions');
+       return;
+     }
+ 
+     setSubmitting(true);
+     try {
+       await fetchWithAuth('/sales', {
+         method: 'POST',
+         body: JSON.stringify({
+           items: cart,
+           paymentType,
+           transactionId: (paymentType === 'UPI' || paymentType === 'BANK') ? transactionId : '',
+           customerId: selectedCustomer?._id || null,
+           discountType,
+           discountValue: discountVal,
+         }),
+       });
+ 
+       toast.success('Sale processed successfully');
+       setCart([]);
+       setSearchQuery('');
+       setSelectedCustomer(null);
+       setDiscountValue('0');
+       setTransactionId('');
+       
+       // Refresh POS stock display automatically without page reload
+       setLoading(true);
+       const [pData, cData] = await Promise.all([
+         fetchWithAuth('/products'),
+         fetchWithAuth('/customers')
+       ]);
+       setProducts(pData);
+       setCustomers(cData);
+       setLoading(false);
+     } catch (error: any) {
+       toast.error(error.message || 'Transaction failed');
+     } finally {
+       setSubmitting(false);
+     }
+   };
 
   return (
     <DashboardLayout>
@@ -243,7 +257,7 @@ export default function NewSalePage() {
                     <div className="flex items-center justify-between">
                       <p className="text-lg font-black text-white">{formatPrice(product.sellingPrice)}</p>
                       <div className={`px-2 py-1 rounded-lg text-[9px] font-black border ${product.stock < 10 ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
-                        {product.stock} {product.unit || 'UNIT'}
+                        {product.stock} {product.type === 'CHILD' ? 'Unit' : (product.type === 'PARENT' && (product.unit === 'LITER' || product.unit === 'UNIT') ? 'L' : (product.unit === 'LITER' ? 'L' : (product.unit === 'UNIT' ? 'Unit' : (product.unit || 'Unit'))))}
                       </div>
                     </div>
                   </motion.div>
@@ -318,7 +332,7 @@ export default function NewSalePage() {
                             value={item.quantity}
                             onChange={(e) => updateQuantity(item.productId, item.variantId, e.target.value)}
                           />
-                          <span className="text-[10px] font-black text-gray-500 mr-2 uppercase">{item.unit || 'UNIT'}</span>
+                          <span className="text-[10px] font-black text-gray-500 mr-2">{item.unit || 'Unit'}</span>
                         </div>
                         <button onClick={() => removeFromCart(item.productId, item.variantId)} className="p-2 text-rose-500/50 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all">
                           <Trash2 size={18} />

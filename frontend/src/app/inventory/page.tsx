@@ -218,10 +218,10 @@ export default function InventoryDashboard() {
                         <div className="flex items-center gap-6">
                           <div className="text-right">
                             <span className="text-xl font-black text-white tracking-tighter">
-                              {parent.stock}
+                              {parent.stock} {parent.unit === 'LITER' ? 'L' : (parent.unit === 'UNIT' ? 'L' : (parent.unit || 'L'))}
                             </span>
                             <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest block">
-                              {parent.unit || 'Units'} Bulk Stock
+                              Bulk Stock
                             </span>
                           </div>
                           <div className="p-2 hover:bg-white/5 rounded-xl transition-colors text-gray-400">
@@ -263,14 +263,14 @@ export default function InventoryDashboard() {
                                     </div>
                                   </div>
                                   <div className="col-span-3 text-center text-gray-400 font-medium">
-                                    1 Unit = <strong className="text-cyan-400">{child.conversion_quantity}</strong> {parent.unit || 'Liters'}
+                                    1 Unit = <strong className="text-cyan-400">{child.conversion_quantity}</strong> {parent.unit === 'LITER' ? 'L' : (parent.unit === 'UNIT' ? 'L' : (parent.unit || 'L'))}
                                   </div>
                                   <div className="col-span-2 text-right">
                                     <span className="font-black text-sm text-emerald-400 block">
                                       {child.stock}
                                     </span>
                                     <span className="text-[8px] text-gray-500 font-black uppercase tracking-wider">
-                                      {child.unit || 'Units'} Available
+                                      Units Available
                                     </span>
                                   </div>
                                   <div className="col-span-2 text-right font-bold text-white">
@@ -332,7 +332,7 @@ export default function InventoryDashboard() {
                             </span>
                           </div>
                           <span className={`font-black text-sm shrink-0 ${m.type === 'OUTGOING' ? 'text-rose-400' : 'text-emerald-400'}`}>
-                            {m.type === 'OUTGOING' ? '-' : '+'}{m.quantity} {m.productId?.unit || 'Units'}
+                            {m.type === 'OUTGOING' ? '-' : '+'}{m.quantity} {m.productId ? (m.productId.type === 'CHILD' ? 'Units' : (m.productId.type === 'PARENT' && (m.productId.unit === 'LITER' || m.productId.unit === 'UNIT') ? 'L' : (m.productId.unit === 'LITER' ? 'L' : (m.productId.unit === 'UNIT' ? 'Units' : (m.productId.unit || 'L'))))) : 'Units'}
                           </span>
                         </div>
 

@@ -59,10 +59,10 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
   const totalRevenue = history.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
   const stats = [
-    { label: 'Units Sold', value: `${totalUnitsSold} ${product.unit || 'UNIT'}`, icon: ShoppingCart, color: 'text-cyan-400' },
+    { label: 'Units Sold', value: `${totalUnitsSold} ${product.type === 'CHILD' ? 'Units' : (product.type === 'PARENT' && (product.unit === 'LITER' || product.unit === 'UNIT') ? 'L' : (product.unit === 'LITER' ? 'L' : (product.unit === 'UNIT' ? 'Units' : (product.unit || 'L'))))}`, icon: ShoppingCart, color: 'text-cyan-400' },
     { label: 'Revenue', value: formatPrice(totalRevenue), icon: TrendingUp, color: 'text-emerald-400' },
     { label: 'Profit Margin', value: `${margin.toFixed(1)}%`, icon: DollarSign, color: 'text-indigo-400' },
-    { label: 'In Stock', value: `${product.stock} ${product.unit || 'UNIT'}`, icon: Package, color: product.stock < 10 ? 'text-rose-400' : 'text-emerald-400' },
+    { label: 'In Stock', value: `${product.stock} ${product.type === 'CHILD' ? 'Units' : (product.type === 'PARENT' && (product.unit === 'LITER' || product.unit === 'UNIT') ? 'L' : (product.unit === 'LITER' ? 'L' : (product.unit === 'UNIT' ? 'Units' : (product.unit || 'L'))))}`, icon: Package, color: product.stock < 10 ? 'text-rose-400' : 'text-emerald-400' },
   ];
 
   return (

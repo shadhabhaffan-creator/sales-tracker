@@ -763,7 +763,7 @@ export async function fetchWithAuth(
           const { data: parent } = await supabase.from('Product').select('*').eq('id', parentId).single();
           if (parent) {
             const requiredQty = item.quantity * product.conversion_quantity;
-            let calculatedParentStock = Math.max(0, (parent.stock || 0) - requiredQty);
+            let calculatedParentStock = Math.max(0, Number(((parent.stock || 0) - requiredQty).toFixed(4)));
 
             // Deduct from parent's variants if any exist
             const { data: parentVariants } = await supabase.from('Variant').select('*').eq('productId', parentId);
@@ -773,20 +773,21 @@ export async function fetchWithAuth(
                 if (remainingDeduction <= 0) break;
                 const deductQty = Math.min(v.stock || 0, remainingDeduction);
                 if (deductQty > 0) {
-                  const nextVarStock = (v.stock || 0) - deductQty;
+                  const nextVarStock = Math.max(0, Number(((v.stock || 0) - deductQty).toFixed(4)));
                   await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', v.id);
                   remainingDeduction -= deductQty;
                 }
               }
               if (remainingDeduction > 0) {
                 const firstVar = parentVariants[0];
-                const nextVarStock = (firstVar.stock || 0) - remainingDeduction;
+                const nextVarStock = Number(((firstVar.stock || 0) - remainingDeduction).toFixed(4));
                 await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', firstVar.id);
               }
 
               // Recalculate parent stock based on updated variants
               const { data: updatedVars } = await supabase.from('Variant').select('stock').eq('productId', parentId);
               calculatedParentStock = (updatedVars || []).reduce((sum, vr) => sum + (vr.stock || 0), 0);
+              calculatedParentStock = Number(calculatedParentStock.toFixed(4));
             }
 
             // Deduct parent stock
@@ -1454,10 +1455,22 @@ export async function fetchWithAuth(
           // Determine target product for physical stock increment
           let finalAllocProductId = targetProductId;
           let targetAllocQty = alloc.quantity;
+          let finalAllocVariantId = targetVariantId;
+          let finalAllocVariantName = finalVariantName;
 
           if (prod.type === 'CHILD') {
             finalAllocProductId = prod.parent_id;
             targetAllocQty = alloc.quantity * (prod.conversion_quantity || 1);
+
+            // If parent has variants, allocate to parent's first variant
+            const { data: parentVariants } = await supabase.from('Variant').select('*').eq('productId', prod.parent_id);
+            if (parentVariants && parentVariants.length > 0) {
+              finalAllocVariantId = parentVariants[0].id;
+              finalAllocVariantName = parentVariants[0].name;
+            } else {
+              finalAllocVariantId = null;
+              finalAllocVariantName = null;
+            }
           }
 
           // Update/upsert warehouse product stock
@@ -1466,8 +1479,8 @@ export async function fetchWithAuth(
             .eq('warehouseId', alloc.warehouseId)
             .eq('productId', finalAllocProductId);
           
-          if (targetVariantId) {
-            query = query.eq('variantId', targetVariantId);
+          if (finalAllocVariantId) {
+            query = query.eq('variantId', finalAllocVariantId);
           } else {
             query = query.is('variantId', null);
           }
@@ -1476,16 +1489,16 @@ export async function fetchWithAuth(
 
           if (whp) {
             await supabase.from('WarehouseProduct')
-              .update({ stock: (whp.stock || 0) + targetAllocQty })
+              .update({ stock: Number(((whp.stock || 0) + targetAllocQty).toFixed(4)) })
               .eq('id', whp.id);
           } else {
             await supabase.from('WarehouseProduct').insert({
               id: crypto.randomUUID(),
               warehouseId: alloc.warehouseId,
               productId: finalAllocProductId,
-              variantId: targetVariantId || undefined,
-              variantName: finalVariantName || undefined,
-              stock: targetAllocQty
+              variantId: finalAllocVariantId || undefined,
+              variantName: finalAllocVariantName || undefined,
+              stock: Number(targetAllocQty.toFixed(4))
             });
           }
         }
@@ -1497,7 +1510,20 @@ export async function fetchWithAuth(
         const { data: parent } = await supabase.from('Product').select('*').eq('id', parentId).single();
         if (parent) {
           const bulkQtyAdded = body.quantity * (prod.conversion_quantity || 1);
-          const nextParentStock = (parent.stock || 0) + bulkQtyAdded;
+          let nextParentStock = (parent.stock || 0) + bulkQtyAdded;
+
+          // If parent has variants, add stock to parent's first variant and recalculate parent stock
+          const { data: parentVariants } = await supabase.from('Variant').select('*').eq('productId', parentId);
+          if (parentVariants && parentVariants.length > 0) {
+            const firstVar = parentVariants[0];
+            const nextVarStock = Number(((firstVar.stock || 0) + bulkQtyAdded).toFixed(4));
+            await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', firstVar.id);
+
+            const { data: updatedVars } = await supabase.from('Variant').select('stock').eq('productId', parentId);
+            nextParentStock = (updatedVars || []).reduce((sum, vr) => sum + (vr.stock || 0), 0);
+          }
+
+          nextParentStock = Number(nextParentStock.toFixed(4));
           await supabase.from('Product').update({ stock: nextParentStock }).eq('id', parentId);
 
           // Sync parent inventory
@@ -1687,6 +1713,7 @@ export async function fetchWithAuth(
 
       let inventoryValue = 0;
       products?.forEach(p => {
+        if (p.type === 'CHILD') return; // Skip child products to avoid double counting raw stock
         if (p.variants && p.variants.length > 0) {
           p.variants.forEach((v: any) => {
             inventoryValue += (v.stock || 0) * (v.costPrice || 0);
@@ -1776,9 +1803,17 @@ export async function fetchWithAuth(
         .order('createdAt', { ascending: false });
       if (mError) throw new Error(mError.message);
 
+      // 1. Sync parent/standard product stock with sum of variant stocks if variants exist
+      const productsWithVariantStockSynced = (products || []).map((p: any) => {
+        if (p.variants && p.variants.length > 0) {
+          p.stock = p.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+        }
+        return p;
+      });
+
       // Compute statistics
-      const parentProducts = products?.filter(p => p.type === 'PARENT') || [];
-      const childProducts = products?.filter(p => p.type === 'CHILD') || [];
+      const parentProducts = productsWithVariantStockSynced.filter(p => p.type === 'PARENT');
+      const childProducts = productsWithVariantStockSynced.filter(p => p.type === 'CHILD');
       
       const totalParentStock = parentProducts.reduce((sum, p) => sum + (p.stock || 0), 0);
       const activeParentProducts = parentProducts.filter(p => (p.stock || 0) > 0).length;

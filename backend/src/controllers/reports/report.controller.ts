@@ -64,7 +64,25 @@ export const getDailyReport = async (req: Request, res: Response) => {
     const totalExpenses = expenses.reduce((sum: number, e: any) => sum + e.amount, 0);
     const totalSettlements = settlements.reduce((sum: number, s: any) => sum + (s.amountPaid || 0), 0);
     const totalPendingDues = customerStats.totalDue;
-    const inventoryValue = products.reduce((sum: number, p: any) => sum + (p.stock * p.costPrice), 0);
+    // Sync parent/standard product stock with sum of variant stocks if variants exist
+    // and exclude child products to avoid double counting
+    let inventoryValue = 0;
+    for (const p of products) {
+      if (p.type === 'CHILD') continue; // skip child products to avoid double counting
+      
+      let stock = p.stock || 0;
+      if (p.variants && p.variants.length > 0) {
+        stock = p.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+      }
+
+      if (p.variants && p.variants.length > 0) {
+        for (const v of p.variants) {
+          inventoryValue += (v.stock || 0) * (v.costPrice || 0);
+        }
+      } else {
+        inventoryValue += stock * (p.costPrice || 0);
+      }
+    }
 
     // Calculate net profit
     const netProfit = totalProfit - totalExpenses;
