@@ -261,6 +261,25 @@ export async function fetchWithAuth(
 
   // 3. PRODUCTS
   if (resource === 'products') {
+    if (parts[2] === 'history' && method === 'GET') {
+      const productId = parts[1];
+      const { data: saleItems, error } = await supabase
+        .from('SaleItem')
+        .select('*, sale:Sale(*, customer:Customer(*))')
+        .eq('productId', productId)
+        .order('createdAt', { ascending: false })
+        .limit(10);
+
+      if (error) throw new Error(error.message);
+
+      return mapIds((saleItems || []).map((item: any) => ({
+        customerName: item.sale?.customer?.name || 'Guest',
+        quantity: item.quantity,
+        price: item.unitPrice,
+        date: item.createdAt
+      })));
+    }
+
     if (method === 'GET') {
       const { data: products, error } = await supabase
         .from('Product')
