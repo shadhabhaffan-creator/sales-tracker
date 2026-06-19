@@ -64,8 +64,12 @@ export const createSale = async (req: Request, res: Response) => {
       if (!parentProd) {
         throw new Error(`Parent product not found for ID: ${prodId}`);
       }
-      if (parentProd.stock < requiredQty) {
-        throw new Error(`Insufficient stock for product "${parentProd.name}". Required: ${requiredQty} ${parentProd.unit}, Available: ${parentProd.stock} ${parentProd.unit}`);
+      const availableStock = parentProd.variants && parentProd.variants.length > 0
+        ? parentProd.variants.reduce((sum: number, vr: any) => sum + (vr.stock || 0), 0)
+        : (parentProd.stock || 0);
+
+      if (availableStock < requiredQty) {
+        throw new Error(`Insufficient stock for product "${parentProd.name}". Required: ${requiredQty} ${parentProd.unit}, Available: ${availableStock} ${parentProd.unit}`);
       }
     }
 
@@ -85,8 +89,25 @@ export const createSale = async (req: Request, res: Response) => {
         const parentProduct = await Product.findById(parentId);
         const requiredQty = item.quantity * product.conversion_quantity;
 
-        // Deduct parent stock
-        parentProduct.stock -= requiredQty;
+        // Deduct from parent's variants if any exist
+        if (parentProduct.variants && parentProduct.variants.length > 0) {
+          let remainingDeduction = requiredQty;
+          for (let v of parentProduct.variants) {
+            if (remainingDeduction <= 0) break;
+            const deductQty = Math.min(v.stock || 0, remainingDeduction);
+            if (deductQty > 0) {
+              v.stock -= deductQty;
+              remainingDeduction -= deductQty;
+            }
+          }
+          if (remainingDeduction > 0) {
+            parentProduct.variants[0].stock -= remainingDeduction;
+          }
+          // Recalculate parentProduct.stock
+          parentProduct.stock = parentProduct.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+        } else {
+          parentProduct.stock -= requiredQty;
+        }
         await parentProduct.save();
 
         // Sync parent inventory record
@@ -256,7 +277,13 @@ export const deleteSale = async (req: Request, res: Response) => {
             const parentProduct = await Product.findById(parentId);
             if (parentProduct) {
               const restoredQty = item.quantity * product.conversion_quantity;
-              parentProduct.stock += restoredQty;
+              
+              if (parentProduct.variants && parentProduct.variants.length > 0) {
+                parentProduct.variants[0].stock += restoredQty;
+                parentProduct.stock = parentProduct.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+              } else {
+                parentProduct.stock += restoredQty;
+              }
               await parentProduct.save();
 
               // Sync parent inventory record

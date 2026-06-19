@@ -8,10 +8,19 @@ export const getProducts = async (req: Request, res: Response) => {
       .populate('variants.supplierId')
       .sort({ createdAt: -1 });
       
-    const productsWithDerivedStock = products.map((p: any) => {
+    // 1. Sync parent/standard product stock with sum of variant stocks if variants exist
+    const productsWithVariantStockSynced = products.map((p: any) => {
       const doc = p.toObject ? p.toObject() : { ...p };
+      if (doc.variants && doc.variants.length > 0) {
+        doc.stock = doc.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+      }
+      return doc;
+    });
+
+    // 2. Dynamic stock calculation for CHILD products
+    const productsWithDerivedStock = productsWithVariantStockSynced.map((doc: any) => {
       if (doc.type === 'CHILD' && doc.parent_id) {
-        const parentProduct = products.find((parent: any) => String(parent.id || parent._id) === String(doc.parent_id));
+        const parentProduct = productsWithVariantStockSynced.find((parent: any) => String(parent.id || parent._id) === String(doc.parent_id));
         if (parentProduct) {
           doc.stock = Math.floor((parentProduct.stock || 0) / (doc.conversion_quantity || 1));
         } else {
