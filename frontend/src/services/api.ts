@@ -302,8 +302,20 @@ export async function fetchWithAuth(
           const parentProduct = productsWithVariantStockSynced.find((parent: any) => parent.id === p.parent_id);
           if (parentProduct) {
             p.stock = Math.floor((parentProduct.stock || 0) / (p.conversion_quantity || 1));
+            if (p.variants && p.variants.length > 0) {
+              p.variants = p.variants.map((v: any) => ({
+                ...v,
+                stock: p.stock
+              }));
+            }
           } else {
             p.stock = 0;
+            if (p.variants && p.variants.length > 0) {
+              p.variants = p.variants.map((v: any) => ({
+                ...v,
+                stock: 0
+              }));
+            }
           }
         }
         return p;
@@ -743,7 +755,7 @@ export async function fetchWithAuth(
 
       // Insert sale items and update product/variant stocks
       for (const item of body.items) {
-        await supabase.from('SaleItem').insert({
+        const { error: saleItemErr } = await supabase.from('SaleItem').insert({
           id: crypto.randomUUID(),
           saleId,
           productId: item.productId,
@@ -755,18 +767,21 @@ export async function fetchWithAuth(
           totalPrice: item.sellingPrice * item.quantity,
           unit: item.unit || 'UNIT'
         });
+        if (saleItemErr) throw new Error(`Failed to insert SaleItem: ${saleItemErr.message}`);
 
         const product = productCache[item.productId];
 
         if (product.type === 'CHILD') {
           const parentId = product.parent_id;
-          const { data: parent } = await supabase.from('Product').select('*').eq('id', parentId).single();
+          const { data: parent, error: parentErr } = await supabase.from('Product').select('*').eq('id', parentId).single();
+          if (parentErr) throw new Error(`Failed to fetch parent product: ${parentErr.message}`);
           if (parent) {
             const requiredQty = item.quantity * product.conversion_quantity;
             let calculatedParentStock = Math.max(0, Number(((parent.stock || 0) - requiredQty).toFixed(4)));
 
             // Deduct from parent's variants if any exist
-            const { data: parentVariants } = await supabase.from('Variant').select('*').eq('productId', parentId);
+            const { data: parentVariants, error: pvErr } = await supabase.from('Variant').select('*').eq('productId', parentId);
+            if (pvErr) throw new Error(`Failed to fetch parent variants: ${pvErr.message}`);
             if (parentVariants && parentVariants.length > 0) {
               let remainingDeduction = requiredQty;
               for (const v of parentVariants) {
@@ -774,35 +789,56 @@ export async function fetchWithAuth(
                 const deductQty = Math.min(v.stock || 0, remainingDeduction);
                 if (deductQty > 0) {
                   const nextVarStock = Math.max(0, Number(((v.stock || 0) - deductQty).toFixed(4)));
-                  await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', v.id);
+                  const { error: uvErr } = await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', v.id);
+                  if (uvErr) throw new Error(`Failed to update parent variant stock: ${uvErr.message}`);
                   remainingDeduction -= deductQty;
                 }
               }
               if (remainingDeduction > 0) {
                 const firstVar = parentVariants[0];
                 const nextVarStock = Number(((firstVar.stock || 0) - remainingDeduction).toFixed(4));
-                await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', firstVar.id);
+                const { error: uvErr } = await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', firstVar.id);
+                if (uvErr) throw new Error(`Failed to update parent variant stock: ${uvErr.message}`);
               }
 
               // Recalculate parent stock based on updated variants
-              const { data: updatedVars } = await supabase.from('Variant').select('stock').eq('productId', parentId);
+              const { data: updatedVars, error: uvFetchErr } = await supabase.from('Variant').select('stock').eq('productId', parentId);
+              if (uvFetchErr) throw new Error(`Failed to fetch updated parent variants: ${uvFetchErr.message}`);
               calculatedParentStock = (updatedVars || []).reduce((sum, vr) => sum + (vr.stock || 0), 0);
               calculatedParentStock = Number(calculatedParentStock.toFixed(4));
             }
 
             // Deduct parent stock
-            await supabase.from('Product').update({ stock: calculatedParentStock }).eq('id', parentId);
+            const { error: upProdErr } = await supabase.from('Product').update({ stock: calculatedParentStock }).eq('id', parentId);
+            if (upProdErr) throw new Error(`Failed to update parent product stock: ${upProdErr.message}`);
 
             // Sync parent inventory record
-            const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', parentId).maybeSingle();
+            const { data: inv, error: invFetchErr } = await supabase.from('Inventory').select('*').eq('product_id', parentId).maybeSingle();
+            if (invFetchErr) throw new Error(`Failed to fetch parent inventory: ${invFetchErr.message}`);
             if (inv) {
-              await supabase.from('Inventory').update({ stock_quantity: calculatedParentStock }).eq('id', inv.id);
+              const { error: upInvErr } = await supabase.from('Inventory').update({ stock_quantity: calculatedParentStock }).eq('id', inv.id);
+              if (upInvErr) throw new Error(`Failed to update parent inventory: ${upInvErr.message}`);
             } else {
-              await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: parentId, stock_quantity: calculatedParentStock });
+              const { error: insInvErr } = await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: parentId, stock_quantity: calculatedParentStock });
+              if (insInvErr) throw new Error(`Failed to insert parent inventory: ${insInvErr.message}`);
+            }
+
+            // Sync child product stock & child variants stock in the database
+            const childStock = Math.floor(calculatedParentStock / product.conversion_quantity);
+            const { error: upChildErr } = await supabase.from('Product').update({ stock: childStock }).eq('id', product.id);
+            if (upChildErr) throw new Error(`Failed to update child product stock: ${upChildErr.message}`);
+
+            const { data: childVariants, error: cvFetchErr } = await supabase.from('Variant').select('*').eq('productId', product.id);
+            if (cvFetchErr) throw new Error(`Failed to fetch child variants: ${cvFetchErr.message}`);
+            if (childVariants && childVariants.length > 0) {
+              for (const cv of childVariants) {
+                const { error: upChildVarErr } = await supabase.from('Variant').update({ stock: childStock }).eq('id', cv.id);
+                if (upChildVarErr) throw new Error(`Failed to update child variant stock: ${upChildVarErr.message}`);
+              }
             }
 
             // Log parent stock movement
-            await supabase.from('StockMovement').insert({
+            const { error: moveParentErr } = await supabase.from('StockMovement').insert({
               id: crypto.randomUUID(),
               productId: parentId,
               type: 'OUTGOING',
@@ -811,9 +847,10 @@ export async function fetchWithAuth(
               performedBy: 'System Sale',
               createdAt: new Date().toISOString()
             });
+            if (moveParentErr) throw new Error(`Failed to insert parent stock movement: ${moveParentErr.message}`);
 
             // Log child stock movement
-            await supabase.from('StockMovement').insert({
+            const { error: moveChildErr } = await supabase.from('StockMovement').insert({
               id: crypto.randomUUID(),
               productId: product.id,
               type: 'OUTGOING',
@@ -822,30 +859,38 @@ export async function fetchWithAuth(
               performedBy: 'System Sale',
               createdAt: new Date().toISOString()
             });
+            if (moveChildErr) throw new Error(`Failed to insert child stock movement: ${moveChildErr.message}`);
           }
         } else {
           // Standard / Variant product
           if (item.variantId) {
-            const { data: v } = await supabase.from('Variant').select('*').eq('id', item.variantId).single();
+            const { data: v, error: vErr } = await supabase.from('Variant').select('*').eq('id', item.variantId).single();
+            if (vErr) throw new Error(`Failed to fetch variant: ${vErr.message}`);
             if (v) {
               const nextVarStock = Math.max(0, (v.stock || 0) - item.quantity);
-              await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', item.variantId);
+              const { error: uvErr } = await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', item.variantId);
+              if (uvErr) throw new Error(`Failed to update variant stock: ${uvErr.message}`);
               
               // Sum variant stocks for product total
-              const { data: allVars } = await supabase.from('Variant').select('stock').eq('productId', product.id);
+              const { data: allVars, error: avErr } = await supabase.from('Variant').select('stock').eq('productId', product.id);
+              if (avErr) throw new Error(`Failed to fetch variants for sum: ${avErr.message}`);
               const nextProdStock = (allVars || []).reduce((sum, vr) => sum + (vr.stock || 0), 0);
-              await supabase.from('Product').update({ stock: nextProdStock }).eq('id', product.id);
+              const { error: upProdErr } = await supabase.from('Product').update({ stock: nextProdStock }).eq('id', product.id);
+              if (upProdErr) throw new Error(`Failed to update product stock: ${upProdErr.message}`);
 
               // Sync inventory record
-              const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', product.id).maybeSingle();
+              const { data: inv, error: invFetchErr } = await supabase.from('Inventory').select('*').eq('product_id', product.id).maybeSingle();
+              if (invFetchErr) throw new Error(`Failed to fetch inventory: ${invFetchErr.message}`);
               if (inv) {
-                await supabase.from('Inventory').update({ stock_quantity: nextProdStock }).eq('id', inv.id);
+                const { error: upInvErr } = await supabase.from('Inventory').update({ stock_quantity: nextProdStock }).eq('id', inv.id);
+                if (upInvErr) throw new Error(`Failed to update inventory: ${upInvErr.message}`);
               } else {
-                await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: product.id, stock_quantity: nextProdStock });
+                const { error: insInvErr } = await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: product.id, stock_quantity: nextProdStock });
+                if (insInvErr) throw new Error(`Failed to insert inventory: ${insInvErr.message}`);
               }
 
               // Log variant stock movement
-              await supabase.from('StockMovement').insert({
+              const { error: moveVarErr } = await supabase.from('StockMovement').insert({
                 id: crypto.randomUUID(),
                 productId: product.id,
                 variantId: item.variantId,
@@ -856,21 +901,26 @@ export async function fetchWithAuth(
                 performedBy: 'System Sale',
                 createdAt: new Date().toISOString()
               });
+              if (moveVarErr) throw new Error(`Failed to insert stock movement: ${moveVarErr.message}`);
             }
           } else {
             const nextProdStock = Math.max(0, (product.stock || 0) - item.quantity);
-            await supabase.from('Product').update({ stock: nextProdStock }).eq('id', product.id);
+            const { error: upProdErr } = await supabase.from('Product').update({ stock: nextProdStock }).eq('id', product.id);
+            if (upProdErr) throw new Error(`Failed to update product stock: ${upProdErr.message}`);
 
             // Sync inventory record
-            const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', product.id).maybeSingle();
+            const { data: inv, error: invFetchErr } = await supabase.from('Inventory').select('*').eq('product_id', product.id).maybeSingle();
+            if (invFetchErr) throw new Error(`Failed to fetch inventory: ${invFetchErr.message}`);
             if (inv) {
-              await supabase.from('Inventory').update({ stock_quantity: nextProdStock }).eq('id', inv.id);
+              const { error: upInvErr } = await supabase.from('Inventory').update({ stock_quantity: nextProdStock }).eq('id', inv.id);
+              if (upInvErr) throw new Error(`Failed to update inventory: ${upInvErr.message}`);
             } else {
-              await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: product.id, stock_quantity: nextProdStock });
+              const { error: insInvErr } = await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: product.id, stock_quantity: nextProdStock });
+              if (insInvErr) throw new Error(`Failed to insert inventory: ${insInvErr.message}`);
             }
 
             // Log stock movement
-            await supabase.from('StockMovement').insert({
+            const { error: moveProdErr } = await supabase.from('StockMovement').insert({
               id: crypto.randomUUID(),
               productId: product.id,
               type: 'OUTGOING',
@@ -879,6 +929,7 @@ export async function fetchWithAuth(
               performedBy: 'System Sale',
               createdAt: new Date().toISOString()
             });
+            if (moveProdErr) throw new Error(`Failed to insert stock movement: ${moveProdErr.message}`);
           }
         }
       }
@@ -908,44 +959,69 @@ export async function fetchWithAuth(
       const id = body?.id || parts[1];
 
       // 1. Fetch sale items to restore stock
-      const { data: saleItems } = await supabase.from('SaleItem').select('*').eq('saleId', id);
-      const { data: sale } = await supabase.from('Sale').select('*').eq('id', id).single();
+      const { data: saleItems, error: siErr } = await supabase.from('SaleItem').select('*').eq('saleId', id);
+      if (siErr) throw new Error(`Failed to fetch sale items: ${siErr.message}`);
+      const { data: sale, error: sErr } = await supabase.from('Sale').select('*').eq('id', id).single();
+      if (sErr) throw new Error(`Failed to fetch sale: ${sErr.message}`);
       
       if (saleItems && sale) {
         for (const item of saleItems) {
-          const { data: p } = await supabase.from('Product').select('*').eq('id', item.productId).single();
+          const { data: p, error: pErr } = await supabase.from('Product').select('*').eq('id', item.productId).single();
+          if (pErr) throw new Error(`Failed to fetch product: ${pErr.message}`);
           if (p) {
             if (p.type === 'CHILD') {
               const parentId = p.parent_id;
-              const { data: parent } = await supabase.from('Product').select('*').eq('id', parentId).single();
+              const { data: parent, error: parentErr } = await supabase.from('Product').select('*').eq('id', parentId).single();
+              if (parentErr) throw new Error(`Failed to fetch parent product: ${parentErr.message}`);
               if (parent) {
                 const restoredQty = item.quantity * p.conversion_quantity;
                 let calculatedParentStock = (parent.stock || 0) + restoredQty;
 
                 // Restore to parent's variants if any exist
-                const { data: parentVariants } = await supabase.from('Variant').select('*').eq('productId', parentId);
+                const { data: parentVariants, error: pvErr } = await supabase.from('Variant').select('*').eq('productId', parentId);
+                if (pvErr) throw new Error(`Failed to fetch parent variants: ${pvErr.message}`);
                 if (parentVariants && parentVariants.length > 0) {
                   const firstVar = parentVariants[0];
                   const nextVarStock = (firstVar.stock || 0) + restoredQty;
-                  await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', firstVar.id);
+                  const { error: uvErr } = await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', firstVar.id);
+                  if (uvErr) throw new Error(`Failed to update parent variant stock: ${uvErr.message}`);
 
                   // Recalculate parent stock
-                  const { data: updatedVars } = await supabase.from('Variant').select('stock').eq('productId', parentId);
+                  const { data: updatedVars, error: uvFetchErr } = await supabase.from('Variant').select('stock').eq('productId', parentId);
+                  if (uvFetchErr) throw new Error(`Failed to fetch updated parent variants: ${uvFetchErr.message}`);
                   calculatedParentStock = (updatedVars || []).reduce((sum, vr) => sum + (vr.stock || 0), 0);
                 }
 
-                await supabase.from('Product').update({ stock: calculatedParentStock }).eq('id', parentId);
+                const { error: upProdErr } = await supabase.from('Product').update({ stock: calculatedParentStock }).eq('id', parentId);
+                if (upProdErr) throw new Error(`Failed to update parent product stock: ${upProdErr.message}`);
 
                 // Sync inventory
-                const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', parentId).maybeSingle();
+                const { data: inv, error: invFetchErr } = await supabase.from('Inventory').select('*').eq('product_id', parentId).maybeSingle();
+                if (invFetchErr) throw new Error(`Failed to fetch parent inventory: ${invFetchErr.message}`);
                 if (inv) {
-                  await supabase.from('Inventory').update({ stock_quantity: calculatedParentStock }).eq('id', inv.id);
+                  const { error: upInvErr } = await supabase.from('Inventory').update({ stock_quantity: calculatedParentStock }).eq('id', inv.id);
+                  if (upInvErr) throw new Error(`Failed to update parent inventory: ${upInvErr.message}`);
                 } else {
-                  await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: parentId, stock_quantity: calculatedParentStock });
+                  const { error: insInvErr } = await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: parentId, stock_quantity: calculatedParentStock });
+                  if (insInvErr) throw new Error(`Failed to insert parent inventory: ${insInvErr.message}`);
+                }
+
+                // Restore/sync child stock and child variants in the database
+                const childStock = Math.floor(calculatedParentStock / p.conversion_quantity);
+                const { error: upChildErr } = await supabase.from('Product').update({ stock: childStock }).eq('id', p.id);
+                if (upChildErr) throw new Error(`Failed to update child product stock: ${upChildErr.message}`);
+
+                const { data: childVariants, error: cvFetchErr } = await supabase.from('Variant').select('*').eq('productId', p.id);
+                if (cvFetchErr) throw new Error(`Failed to fetch child variants: ${cvFetchErr.message}`);
+                if (childVariants && childVariants.length > 0) {
+                  for (const cv of childVariants) {
+                    const { error: upChildVarErr } = await supabase.from('Variant').update({ stock: childStock }).eq('id', cv.id);
+                    if (upChildVarErr) throw new Error(`Failed to update child variant stock: ${upChildVarErr.message}`);
+                  }
                 }
 
                 // Log parent movement
-                await supabase.from('StockMovement').insert({
+                const { error: moveParentErr } = await supabase.from('StockMovement').insert({
                   id: crypto.randomUUID(),
                   productId: parentId,
                   type: 'INCOMING',
@@ -954,10 +1030,11 @@ export async function fetchWithAuth(
                   performedBy: 'System Sale',
                   createdAt: new Date().toISOString()
                 });
+                if (moveParentErr) throw new Error(`Failed to insert parent stock movement: ${moveParentErr.message}`);
               }
 
               // Log child movement
-              await supabase.from('StockMovement').insert({
+              const { error: moveChildErr } = await supabase.from('StockMovement').insert({
                 id: crypto.randomUUID(),
                 productId: item.productId,
                 type: 'INCOMING',
@@ -966,30 +1043,38 @@ export async function fetchWithAuth(
                 performedBy: 'System Sale',
                 createdAt: new Date().toISOString()
               });
+              if (moveChildErr) throw new Error(`Failed to insert child stock movement: ${moveChildErr.message}`);
             } else {
               // Standard or variant
               if (item.variantId) {
-                const { data: v } = await supabase.from('Variant').select('stock').eq('id', item.variantId).single();
+                const { data: v, error: vErr } = await supabase.from('Variant').select('stock').eq('id', item.variantId).single();
+                if (vErr) throw new Error(`Failed to fetch variant: ${vErr.message}`);
                 if (v) {
                   const nextVarStock = (v.stock || 0) + item.quantity;
-                  await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', item.variantId);
+                  const { error: uvErr } = await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', item.variantId);
+                  if (uvErr) throw new Error(`Failed to update variant stock: ${uvErr.message}`);
                 }
                 
                 // Sum variant stocks for product total
-                const { data: allVars } = await supabase.from('Variant').select('stock').eq('productId', p.id);
+                const { data: allVars, error: avErr } = await supabase.from('Variant').select('stock').eq('productId', p.id);
+                if (avErr) throw new Error(`Failed to fetch variants for sum: ${avErr.message}`);
                 const nextProdStock = (allVars || []).reduce((sum, vr) => sum + (vr.stock || 0), 0);
-                await supabase.from('Product').update({ stock: nextProdStock }).eq('id', p.id);
+                const { error: upProdErr } = await supabase.from('Product').update({ stock: nextProdStock }).eq('id', p.id);
+                if (upProdErr) throw new Error(`Failed to update product stock: ${upProdErr.message}`);
 
                 // Sync inventory
-                const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', p.id).maybeSingle();
+                const { data: inv, error: invFetchErr } = await supabase.from('Inventory').select('*').eq('product_id', p.id).maybeSingle();
+                if (invFetchErr) throw new Error(`Failed to fetch inventory: ${invFetchErr.message}`);
                 if (inv) {
-                  await supabase.from('Inventory').update({ stock_quantity: nextProdStock }).eq('id', inv.id);
+                  const { error: upInvErr } = await supabase.from('Inventory').update({ stock_quantity: nextProdStock }).eq('id', inv.id);
+                  if (upInvErr) throw new Error(`Failed to update inventory: ${upInvErr.message}`);
                 } else {
-                  await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: p.id, stock_quantity: nextProdStock });
+                  const { error: insInvErr } = await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: p.id, stock_quantity: nextProdStock });
+                  if (insInvErr) throw new Error(`Failed to insert inventory: ${insInvErr.message}`);
                 }
 
                 // Log variant stock movement
-                await supabase.from('StockMovement').insert({
+                const { error: moveVarErr } = await supabase.from('StockMovement').insert({
                   id: crypto.randomUUID(),
                   productId: p.id,
                   variantId: item.variantId,
@@ -1000,20 +1085,25 @@ export async function fetchWithAuth(
                   performedBy: 'System Sale',
                   createdAt: new Date().toISOString()
                 });
+                if (moveVarErr) throw new Error(`Failed to insert stock movement: ${moveVarErr.message}`);
               } else {
                 const nextStock = (p.stock || 0) + item.quantity;
-                await supabase.from('Product').update({ stock: nextStock }).eq('id', p.id);
+                const { error: upProdErr } = await supabase.from('Product').update({ stock: nextStock }).eq('id', p.id);
+                if (upProdErr) throw new Error(`Failed to update product stock: ${upProdErr.message}`);
 
                 // Sync inventory
-                const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', p.id).maybeSingle();
+                const { data: inv, error: invFetchErr } = await supabase.from('Inventory').select('*').eq('product_id', p.id).maybeSingle();
+                if (invFetchErr) throw new Error(`Failed to fetch inventory: ${invFetchErr.message}`);
                 if (inv) {
-                  await supabase.from('Inventory').update({ stock_quantity: nextStock }).eq('id', inv.id);
+                  const { error: upInvErr } = await supabase.from('Inventory').update({ stock_quantity: nextStock }).eq('id', inv.id);
+                  if (upInvErr) throw new Error(`Failed to update inventory: ${upInvErr.message}`);
                 } else {
-                  await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: p.id, stock_quantity: nextStock });
+                  const { error: insInvErr } = await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: p.id, stock_quantity: nextStock });
+                  if (insInvErr) throw new Error(`Failed to insert inventory: ${insInvErr.message}`);
                 }
 
                 // Log movement
-                await supabase.from('StockMovement').insert({
+                const { error: moveProdErr } = await supabase.from('StockMovement').insert({
                   id: crypto.randomUUID(),
                   productId: p.id,
                   type: 'INCOMING',
@@ -1022,6 +1112,7 @@ export async function fetchWithAuth(
                   performedBy: 'System Sale',
                   createdAt: new Date().toISOString()
                 });
+                if (moveProdErr) throw new Error(`Failed to insert stock movement: ${moveProdErr.message}`);
               }
             }
           }
@@ -1031,7 +1122,8 @@ export async function fetchWithAuth(
       // 2. Revert customer balance/stats if customer exists
       if (sale && sale.customerId) {
         const custId = sale.customerId.id || sale.customerId._id || sale.customerId;
-        const { data: cust } = await supabase.from('Customer').select('*').eq('id', custId).single();
+        const { data: cust, error: cFetchErr } = await supabase.from('Customer').select('*').eq('id', custId).single();
+        if (cFetchErr) throw new Error(`Failed to fetch customer: ${cFetchErr.message}`);
         if (cust) {
           const updates: any = {
             totalSpent: Math.max(0, (cust.totalSpent || 0) - sale.totalAmount)
@@ -1043,7 +1135,8 @@ export async function fetchWithAuth(
           } else {
             updates.totalPaid = Math.max(0, (cust.totalPaid || 0) - sale.totalAmount);
           }
-          await supabase.from('Customer').update(updates).eq('id', cust.id);
+          const { error: upCustErr } = await supabase.from('Customer').update(updates).eq('id', cust.id);
+          if (upCustErr) throw new Error(`Failed to update customer balance: ${upCustErr.message}`);
         }
       }
 
@@ -1094,9 +1187,9 @@ export async function fetchWithAuth(
         .select(`
           *,
           product:Product(*, supplier:Supplier(*)),
-          warehouse:Warehouse(*),
-          sourceWarehouse:Warehouse(*),
-          destinationWarehouse:Warehouse(*)
+          warehouse:Warehouse!warehouseId(*),
+          sourceWarehouse:Warehouse!sourceWarehouseId(*),
+          destinationWarehouse:Warehouse!destinationWarehouseId(*)
         `)
         .order('createdAt', { ascending: false });
 
@@ -1767,9 +1860,9 @@ export async function fetchWithAuth(
       .select(`
         *,
         product:Product(*, supplier:Supplier(*)),
-        warehouse:Warehouse(*),
-        sourceWarehouse:Warehouse(*),
-        destinationWarehouse:Warehouse(*)
+        warehouse:Warehouse!warehouseId(*),
+        sourceWarehouse:Warehouse!sourceWarehouseId(*),
+        destinationWarehouse:Warehouse!destinationWarehouseId(*)
       `)
       .order('createdAt', { ascending: false });
 
@@ -1823,10 +1916,17 @@ export async function fetchWithAuth(
       const mappings = parentProducts.map(parent => {
         const children = childProducts
           .filter(child => child.parent_id === parent.id)
-          .map(child => ({
-            ...child,
-            stock: Math.floor((parent.stock || 0) / (child.conversion_quantity || 1))
-          }));
+          .map(child => {
+            const derivedStock = Math.floor((parent.stock || 0) / (child.conversion_quantity || 1));
+            const childVariants = child.variants && child.variants.length > 0
+              ? child.variants.map((v: any) => ({ ...v, stock: derivedStock }))
+              : [];
+            return {
+              ...child,
+              stock: derivedStock,
+              variants: childVariants
+            };
+          });
 
         return {
           parent: mapIds(parent),

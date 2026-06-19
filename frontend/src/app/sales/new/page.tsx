@@ -271,15 +271,15 @@ export default function NewSalePage() {
         <div className="w-full lg:w-[450px] flex flex-col">
           <div className="glass-panel rounded-[3rem] border border-white/10 overflow-hidden flex flex-col h-full bg-slate-950/40 backdrop-blur-xl relative">
             {/* Cart Header */}
-            <div className="p-8 border-b border-white/5 bg-white/5">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400 border border-cyan-500/20">
-                    <ShoppingCart size={20} />
+            <div className="p-5 border-b border-white/5 bg-white/5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+                    <ShoppingCart size={18} />
                   </div>
-                  <h2 className="text-xl font-black text-white">Checkout</h2>
+                  <h2 className="text-lg font-black text-white">Checkout</h2>
                 </div>
-                <div className="px-3 py-1 bg-cyan-500/10 rounded-lg text-cyan-400 text-[10px] font-black border border-cyan-500/20">
+                <div className="px-2.5 py-0.5 bg-cyan-500/10 rounded-lg text-cyan-400 text-[9px] font-black border border-cyan-500/20">
                   {cart.length} ITEMS
                 </div>
               </div>
@@ -287,27 +287,27 @@ export default function NewSalePage() {
               {/* Customer Selector */}
               <button 
                 onClick={() => setIsCustomerModalOpen(true)}
-                className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between text-left ${selectedCustomer ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                className={`w-full p-3 rounded-2xl border transition-all flex items-center justify-between text-left ${selectedCustomer ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedCustomer ? 'bg-indigo-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
-                    <UserIcon size={16} />
+                    <UserIcon size={14} />
                   </div>
                   <div>
-                    <p className={`text-xs font-black uppercase tracking-widest ${selectedCustomer ? 'text-indigo-400' : 'text-gray-500'}`}>Customer</p>
-                    <p className="text-sm font-bold text-white">{selectedCustomer ? selectedCustomer.name : 'Walk-in Guest'}</p>
+                    <p className={`text-[9px] font-black uppercase tracking-widest ${selectedCustomer ? 'text-indigo-400' : 'text-gray-500'}`}>Customer</p>
+                    <p className="text-xs font-bold text-white">{selectedCustomer ? selectedCustomer.name : 'Walk-in Guest'}</p>
                   </div>
                 </div>
-                <ChevronRight size={18} className="text-gray-600" />
+                <ChevronRight size={16} className="text-gray-600" />
               </button>
             </div>
 
             {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-4 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto p-5 space-y-3 scrollbar-hide">
               {cart.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center opacity-30 gap-4">
-                  <ShoppingCart size={64} />
-                  <p className="font-black uppercase tracking-[0.2em] text-xs">Cart is empty</p>
+                <div className="h-full flex flex-col items-center justify-center opacity-30 gap-2.5 py-8">
+                  <ShoppingCart size={40} />
+                  <p className="font-black uppercase tracking-[0.2em] text-[10px]">Cart is empty</p>
                 </div>
               ) : (
                 <AnimatePresence>
@@ -317,25 +317,25 @@ export default function NewSalePage() {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 group"
+                      className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5 group"
                     >
                       <div className="flex-1">
-                        <p className="text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">{item.name}</p>
-                        <p className="text-xs font-black text-cyan-500 mt-1">{formatPrice(item.sellingPrice)}</p>
+                        <p className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors">{item.name}</p>
+                        <p className="text-[11px] font-black text-cyan-500 mt-0.5">{formatPrice(item.sellingPrice)}</p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-slate-900 rounded-xl p-1 border border-white/5">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 bg-slate-900 rounded-xl p-0.5 border border-white/5">
                           <input 
                             type="number" 
                             step="any"
-                            className="w-16 bg-transparent text-sm font-black text-center focus:outline-none"
+                            className="w-12 bg-transparent text-xs font-black text-center focus:outline-none"
                             value={item.quantity}
                             onChange={(e) => updateQuantity(item.productId, item.variantId, e.target.value)}
                           />
-                          <span className="text-[10px] font-black text-gray-500 mr-2">{item.unit || 'Unit'}</span>
+                          <span className="text-[9px] font-black text-gray-500 mr-1.5">{item.unit || 'Unit'}</span>
                         </div>
-                        <button onClick={() => removeFromCart(item.productId, item.variantId)} className="p-2 text-rose-500/50 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all">
-                          <Trash2 size={18} />
+                        <button onClick={() => removeFromCart(item.productId, item.variantId)} className="p-1.5 text-rose-500/50 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all">
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </motion.div>
@@ -345,7 +345,7 @@ export default function NewSalePage() {
             </div>
 
             {/* Payment & Footer */}
-            <div className="p-8 border-t border-white/10 bg-slate-950 space-y-6">
+            <div className="p-5 border-t border-white/10 bg-slate-950 space-y-4">
               <div className="flex items-center gap-2 justify-between">
                 {[
                   { id: 'CASH', icon: Banknote, color: 'emerald', label: 'CASH' },
@@ -356,14 +356,14 @@ export default function NewSalePage() {
                   <button
                     key={method.id}
                     onClick={() => setPaymentType(method.id)}
-                    className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl border transition-all ${
+                    className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-all ${
                       paymentType === method.id 
                         ? `bg-${method.color}-500/10 border-${method.color}-500 text-${method.color}-400` 
                         : 'bg-white/5 border-transparent text-gray-500 hover:bg-white/10'
                     }`}
                   >
-                    <method.icon size={20} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">{method.label}</span>
+                    <method.icon size={16} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">{method.label}</span>
                   </button>
                 ))}
               </div>
@@ -374,13 +374,13 @@ export default function NewSalePage() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="space-y-2 overflow-hidden"
+                    className="space-y-1 overflow-hidden"
                   >
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Transaction ID / Reference</label>
+                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Transaction ID / Reference</label>
                     <input 
                       type="text"
                       placeholder="Enter Reference Number..."
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-white font-mono"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-white font-mono"
                       value={transactionId}
                       onChange={(e) => setTransactionId(e.target.value)}
                     />
@@ -389,21 +389,21 @@ export default function NewSalePage() {
               </AnimatePresence>
 
               {/* Discount Input */}
-              <div className="space-y-2 border-t border-b border-white/5 py-4">
+              <div className="space-y-1.5 border-t border-b border-white/5 py-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Discount</label>
+                  <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Discount</label>
                   <div className="flex rounded-lg overflow-hidden border border-white/10 bg-white/5">
                     <button 
                       type="button"
                       onClick={() => setDiscountType('FLAT')}
-                      className={`px-3 py-1 text-[10px] font-black transition-colors ${discountType === 'FLAT' ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                      className={`px-2.5 py-0.5 text-[9px] font-black transition-colors ${discountType === 'FLAT' ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:text-white'}`}
                     >
                       FLAT
                     </button>
                     <button 
                       type="button"
                       onClick={() => setDiscountType('PERCENT')}
-                      className={`px-3 py-1 text-[10px] font-black transition-colors ${discountType === 'PERCENT' ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                      className={`px-2.5 py-0.5 text-[9px] font-black transition-colors ${discountType === 'PERCENT' ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:text-white'}`}
                     >
                       %
                     </button>
@@ -415,7 +415,7 @@ export default function NewSalePage() {
                     min="0"
                     step="any"
                     placeholder={`Enter discount ${discountType === 'PERCENT' ? '%' : 'amount'}...`}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-white font-bold"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-white font-bold"
                     value={discountValue}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -427,38 +427,38 @@ export default function NewSalePage() {
                 </div>
               </div>
 
-              <div className="space-y-2 py-4">
-                <div className="flex justify-between items-center text-xs font-medium text-gray-500">
+              <div className="space-y-1.5 py-1">
+                <div className="flex justify-between items-center text-[11px] font-medium text-gray-500">
                   <span>Subtotal</span>
                   <span>{formatPrice(subtotal)}</span>
                 </div>
                 {discountAmount > 0 && (
-                  <div className="flex justify-between items-center text-xs font-medium text-rose-400">
+                  <div className="flex justify-between items-center text-[11px] font-medium text-rose-400">
                     <span>Discount ({discountType === 'PERCENT' ? `${discountVal}%` : 'Flat'})</span>
                     <span>-{formatPrice(discountAmount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-4">
-                  <span className="text-xl font-black text-white">Total Amount</span>
-                  <span className="text-3xl font-black text-cyan-400 tracking-tighter">{formatPrice(total)}</span>
+                <div className="flex justify-between items-center pt-2">
+                  <span className="text-sm font-black text-white">Total Amount</span>
+                  <span className="text-2xl font-black text-cyan-400 tracking-tighter">{formatPrice(total)}</span>
                 </div>
               </div>
 
               <button 
                 onClick={handleSubmit} 
                 disabled={submitting || cart.length === 0} 
-                className={`w-full py-5 rounded-[2rem] text-white font-black text-sm shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${
-                  submitting || cart.length === 0 
-                  ? 'bg-gray-800 cursor-not-allowed opacity-50' 
-                  : 'bg-gradient-to-r from-cyan-500 to-blue-600 shadow-cyan-500/25 hover:shadow-cyan-500/40'
+                className={`w-full py-3.5 rounded-xl text-white font-black text-xs shadow-2xl transition-all flex items-center justify-center gap-2 active:scale-95 ${
+                  (submitting || cart.length === 0)
+                    ? 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed shadow-none'
+                    : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 shadow-cyan-500/20 hover:shadow-cyan-500/30'
                 }`}
               >
-                {submitting ? <Loader2 className="animate-spin" /> : (
-                  <>
-                    <CheckCircle2 size={20} />
-                    <span>FINALIZE TRANSACTION</span>
-                  </>
+                {submitting ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <CheckCircle2 size={16} />
                 )}
+                <span>FINALIZE TRANSACTION</span>
               </button>
             </div>
           </div>

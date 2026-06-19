@@ -188,7 +188,7 @@ model Variant {
   sku               String?            @unique
   costPrice         Float
   sellingPrice      Float
-  stock             Int                @default(0)
+  stock             Float              @default(0)
   unit              String             @default("PIECE")
   supplierId        String?
   supplier          Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull)
