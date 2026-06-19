@@ -110,6 +110,19 @@ export default function ProductsPage() {
     );
   }, [searchTerm, products]);
 
+  // Auto-calculate child product stock whenever parent or conversion_quantity changes
+  useEffect(() => {
+    if (formData.type !== 'CHILD') return;
+    const parent = products.find(p => p._id === formData.parent_id || p.id === formData.parent_id);
+    if (parent && formData.conversion_quantity > 0) {
+      const derived = Math.floor((parent.stock || 0) / formData.conversion_quantity);
+      setFormData(prev => ({ ...prev, stock: derived }));
+    } else {
+      setFormData(prev => ({ ...prev, stock: 0 }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.parent_id, formData.conversion_quantity, formData.type, products]);
+
   const addVariant = (variantName: string) => {
     // Avoid duplicate variant names in the form
     if (formVariants.some(v => v.name.toLowerCase() === variantName.toLowerCase())) {
@@ -1077,16 +1090,21 @@ export default function ProductsPage() {
                           </div>
                           {formData.type === 'CHILD' ? (
                             <div className="space-y-1">
-                              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Computed Stock Level</label>
-                              <div className="w-full glass-input bg-white/5 text-gray-400 font-bold py-3 px-4 rounded-2xl flex items-center">
-                                {(() => {
-                                  const parent = products.find(p => p._id === formData.parent_id || p.id === formData.parent_id);
-                                  if (parent && formData.conversion_quantity) {
-                                    return Math.floor((parent.stock || 0) / formData.conversion_quantity);
-                                  }
-                                  return 0;
-                                })()} (Derived from Parent)
+                              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Received Stock Qty (Auto-Calculated)</label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  readOnly
+                                  className="w-full glass-input font-bold text-cyan-400 bg-white/3 cursor-not-allowed opacity-80"
+                                  value={formData.stock}
+                                />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-cyan-500 uppercase tracking-wider">Auto</div>
                               </div>
+                              <p className="text-[10px] text-cyan-400/70 font-medium ml-1 mt-1">
+                                {formData.parent_id && formData.conversion_quantity > 0
+                                  ? `${products.find(p => p._id === formData.parent_id || p.id === formData.parent_id)?.stock || 0} ÷ ${formData.conversion_quantity} = ${formData.stock} units`
+                                  : 'Calculated from Parent Stock ÷ Consumption Quantity'}
+                              </p>
                             </div>
                           ) : (
                             <div className="space-y-1">
