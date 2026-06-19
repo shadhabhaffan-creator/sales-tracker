@@ -19,6 +19,12 @@ export default function InvoiceModal({
 
  if (!sale) return null;
 
+ const subtotal = sale.items?.reduce((acc: number, item: any) => {
+  return acc + (item.totalPrice || ((item.unitPrice || item.sellingPrice || 0) * item.quantity));
+ }, 0) || 0;
+
+ const discount = sale.discount || 0;
+
  // FIX
  const saleId =
   String(
@@ -85,6 +91,29 @@ export default function InvoiceModal({
    32
   );
 
+  // Render metadata details (billed to, date, payment method)
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(9);
+  doc.text('Billed To:', 14, 52);
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('helvetica', 'bold');
+  doc.text(sale.customerId?.name || 'Guest Customer', 14, 59);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text(sale.customerId?.phone || 'No Phone', 14, 65);
+
+  doc.text('Invoice Date:', 120, 52);
+  doc.setTextColor(15, 23, 42);
+  const dateStr = sale.date 
+    ? format(new Date(sale.date), 'MMM dd, yyyy') 
+    : format(new Date(), 'MMM dd, yyyy');
+  doc.text(dateStr, 120, 59);
+
+  doc.setTextColor(100, 116, 139);
+  doc.text('Payment Method:', 160, 52);
+  doc.setTextColor(15, 23, 42);
+  doc.text(sale.paymentType || 'CASH', 160, 59);
+
   const tableData=
   sale.items?.map(
    (item:any)=>[
@@ -114,7 +143,7 @@ export default function InvoiceModal({
   autoTable(
    doc,
    {
-    startY:85,
+    startY:75,
 
     head:[
       [
@@ -133,6 +162,29 @@ export default function InvoiceModal({
     }
    }
   );
+
+  const finalY = (doc as any).lastAutoTable?.finalY || 110;
+
+  let currentY = finalY + 15;
+  doc.setFontSize(10);
+  doc.setTextColor(100, 116, 139);
+
+  if (discount > 0) {
+   doc.setFont('helvetica', 'normal');
+   doc.text('Subtotal:', 130, currentY);
+   doc.text(formatPrice(subtotal), 196, currentY, { align: 'right' });
+   currentY += 8;
+
+   doc.text(`Discount (${sale.discountType === 'PERCENT' ? `${sale.discountValue}%` : 'Flat'}):`, 130, currentY);
+   doc.text(`-${formatPrice(discount)}`, 196, currentY, { align: 'right' });
+   currentY += 8;
+  }
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(6, 182, 212); // Cyan theme accent
+  doc.text('Total Amount:', 130, currentY);
+  doc.text(formatPrice(sale.totalAmount), 196, currentY, { align: 'right' });
 
   doc.save(
    `Invoice_${saleId}.pdf`
@@ -303,23 +355,27 @@ item.totalPrice
 
 
 
-<div className="mt-8 flex justify-between">
-
-<span>
-Total
-</span>
-
-<span className="font-black text-cyan-400">
-
-{
-formatPrice(
-sale.totalAmount
-)
-}
-
-</span>
-
-</div>
+      {/* Price Summary */}
+      <div className="mt-8 border-t border-white/5 pt-6 space-y-3">
+        {discount > 0 && (
+          <>
+            <div className="flex justify-between text-sm text-gray-400 font-medium">
+              <span>Subtotal</span>
+              <span>{formatPrice(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-emerald-400 font-medium">
+              <span>Discount ({sale.discountType === 'PERCENT' ? `${sale.discountValue}%` : 'Flat'})</span>
+              <span>-{formatPrice(discount)}</span>
+            </div>
+          </>
+        )}
+        <div className="flex justify-between items-center pt-2">
+          <span className="font-bold text-white">Total Amount</span>
+          <span className="text-xl font-black text-cyan-400 font-mono">
+            {formatPrice(sale.totalAmount)}
+          </span>
+        </div>
+      </div>
 
 
 <button

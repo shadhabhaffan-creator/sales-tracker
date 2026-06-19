@@ -163,9 +163,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <UserContext.Provider value={{ user, loading, logout, isAdmin, hasPermission }}>
-      {/* Never block public pages (login, reset-password) with the session spinner */}
       {loading && !isPublicPath ? (
-        <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-950 relative overflow-hidden">
+        <div className="fixed inset-0 z-[9999] h-screen w-full flex flex-col items-center justify-center bg-slate-950 overflow-hidden">
           <div className="absolute inset-0 bg-cyan-500/5 blur-[100px] rounded-full scale-150 animate-pulse" />
           <div className="relative z-10 flex flex-col items-center gap-6">
             <div className="w-16 h-16 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin shadow-[0_0_15px_rgba(6,182,212,0.5)]" />
@@ -175,7 +174,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
-      ) : children}
+      ) : (
+        children
+      )}
     </UserContext.Provider>
   );
 }

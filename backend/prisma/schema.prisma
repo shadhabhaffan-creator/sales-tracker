@@ -151,7 +151,7 @@ model Product {
   sku               String?            @unique
   category          String?
   tags              String?
-  stock             Int                @default(0)
+  stock             Float              @default(0)
   lowStockThreshold Int                @default(5)
   costPrice         Float
   sellingPrice      Float
@@ -170,6 +170,14 @@ model Product {
   supplierPayments  SupplierPayment[]
   stockMovements    StockMovement[]
   saleItems         SaleItem[]
+
+  // Conversion System Fields
+  type                String             @default("STANDARD")
+  parent_id           String?
+  conversion_quantity Float?
+  parentProduct       Product?           @relation("ProductConversion", fields: [parent_id], references: [id], onDelete: SetNull)
+  childProducts       Product[]          @relation("ProductConversion")
+  inventory           Inventory?
 }
 
 model Variant {
@@ -330,6 +338,9 @@ model Sale {
   invoiceId     String       @unique
   date          DateTime     @default(now())
   totalAmount   Float
+  discount      Float        @default(0)
+  discountType  String       @default("FLAT")
+  discountValue Float        @default(0)
   dueAmount     Float        @default(0)
   paymentType   String
   transactionId String?
@@ -389,7 +400,7 @@ model StockMovement {
   warehouseId            String?
   warehouse              Warehouse? @relation("WarehouseMovements", fields: [warehouseId], references: [id], onDelete: SetNull)
   type                   String
-  quantity               Int
+  quantity               Float
   sourceWarehouseId      String?
   sourceWarehouse        Warehouse? @relation("SourceWarehouseMovements", fields: [sourceWarehouseId], references: [id], onDelete: SetNull)
   destinationWarehouseId String?
@@ -398,4 +409,13 @@ model StockMovement {
   performedBy            String?
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
+}
+
+model Inventory {
+  id             String   @id @default(cuid())
+  product_id     String   @unique
+  product        Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  stock_quantity Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

@@ -34,6 +34,9 @@ export interface Sale {
   date: string;
   items: SaleItem[];
   totalAmount: number;
+  discount?: number;
+  discountType?: 'FLAT' | 'PERCENT';
+  discountValue?: number;
   paymentType: 'CASH' | 'UPI' | 'CREDIT';
   customerId?: Customer;
   profit: number;

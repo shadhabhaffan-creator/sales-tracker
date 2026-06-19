@@ -13,6 +13,7 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
   const [supplier, setSupplier] = useState<any>(null);
   const [warehouse, setWarehouse] = useState<any>(null);
   const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [parentProduct, setParentProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,8 +34,13 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
           const foundWh = warehousesData.find((w: any) => w._id === (product.warehouseId._id || product.warehouseId));
           if (foundWh) setWarehouse(foundWh);
         }
+        if (product.type === 'CHILD' && product.parent_id) {
+          const productsData = await fetchWithAuth('/products').catch(() => []);
+          const parent = productsData.find((p: any) => p._id === product.parent_id || p.id === product.parent_id);
+          if (parent) setParentProduct(parent);
+        }
       } catch (error) {
-        console.error('Failed to load product metadata details');
+        console.error('Failed to load product details');
       } finally {
         setLoading(false);
       }
@@ -74,9 +80,19 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
               <Package size={32} className="text-cyan-400" />
             </div>
             <div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-3xl font-black tracking-tight text-white">{product.name}</h2>
                 <span className="px-3 py-1 bg-white/5 rounded-lg border border-white/10 text-[10px] font-black text-gray-500 uppercase tracking-widest">{product.sku || 'NO-SKU'}</span>
+                {product.type === 'PARENT' && (
+                  <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 text-[10px] font-black text-purple-400 uppercase tracking-widest rounded-lg">
+                    Raw Material
+                  </span>
+                )}
+                {product.type === 'CHILD' && (
+                  <span className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-black text-cyan-400 uppercase tracking-widest rounded-lg">
+                    Child Product
+                  </span>
+                )}
               </div>
               <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-[10px] mt-1">{product.category || 'Uncategorized'}</p>
             </div>
@@ -298,6 +314,16 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
                       {warehouse?.location && <p className="text-[9px] text-gray-500 font-sans">{warehouse.location}</p>}
                     </div>
                   </div>
+                  {product.type === 'CHILD' && (
+                    <div className="flex items-center gap-3 pt-3 border-t border-white/5">
+                      <Package size={16} className="text-purple-400 shrink-0" />
+                      <div>
+                        <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Parent Product Link</p>
+                        <p className="text-white font-bold">{parentProduct ? parentProduct.name : 'Bulk Parent'}</p>
+                        <p className="text-[9px] text-purple-400 font-bold">Consumes {product.conversion_quantity} {parentProduct?.unit || 'Liters'} per Unit</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

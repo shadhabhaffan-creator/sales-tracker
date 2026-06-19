@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Sale, Product, Customer, SaleItem } from '../../models';
+import { Sale, Product, Customer, SaleItem, StockMovement, Inventory } from '../../models';
 import mongoose from 'mongoose';
 
 export const getSales = async (req: Request, res: Response) => {
@@ -13,7 +13,7 @@ export const getSales = async (req: Request, res: Response) => {
 
 export const createSale = async (req: Request, res: Response) => {
   try {
-    const { items, paymentType, customerId, notes, paidAmount = 0, transactionId } = req.body;
+    const { items, paymentType, customerId, notes, paidAmount = 0, transactionId, discountType = 'FLAT', discountValue = 0 } = req.body;
 
     let totalAmount = 0;
     let totalProfit = 0;
@@ -21,47 +21,144 @@ export const createSale = async (req: Request, res: Response) => {
 
     const processedItems = [];
 
+    // Pass 1: Aggregate and Validate Stock Levels
+    const parentDeductions: Record<string, number> = {};
+    const productCache: Record<string, any> = {};
+
     for (const item of items) {
-      let product;
-      if (item.variantId) {
-        product = await Product.findOneAndUpdate(
-          { 
-            _id: item.productId, 
-            "variants._id": item.variantId, 
-            "variants.stock": { $gte: item.quantity } 
-          },
-          { 
-            $inc: { 
-              stock: -item.quantity, 
-              "variants.$.stock": -item.quantity 
-            } 
-          },
-          { new: true }
-        );
+      let prod = productCache[item.productId];
+      if (!prod) {
+        prod = await Product.findById(item.productId);
+        if (!prod) {
+          throw new Error(`Product not found: ${item.name}`);
+        }
+        productCache[item.productId] = prod;
+      }
+
+      if (prod.type === 'CHILD') {
+        const pId = prod.parent_id;
+        if (!pId) {
+          throw new Error(`Child product "${prod.name}" has no linked parent product.`);
+        }
+        const neededParentStock = item.quantity * prod.conversion_quantity;
+        parentDeductions[pId] = (parentDeductions[pId] || 0) + neededParentStock;
       } else {
-        product = await Product.findOneAndUpdate(
-          { _id: item.productId, stock: { $gte: item.quantity } },
-          { $inc: { stock: -item.quantity } },
-          { new: true }
-        );
+        // Standard/Parent product (or variant)
+        if (item.variantId) {
+          const variant = prod.variants.find((v: any) => String(v._id) === String(item.variantId));
+          if (!variant) {
+            throw new Error(`Variant not found for product "${prod.name}"`);
+          }
+          if (variant.stock < item.quantity) {
+            throw new Error(`Insufficient stock for variant "${variant.name}" of "${prod.name}". Available: ${variant.stock}`);
+          }
+        } else {
+          parentDeductions[prod.id || prod._id] = (parentDeductions[prod.id || prod._id] || 0) + item.quantity;
+        }
       }
+    }
 
-      if (!product) {
-        throw new Error(`Insufficient stock for ${item.name} or product not found`);
+    // Validate aggregated deductions against current stocks
+    for (const [prodId, requiredQty] of Object.entries(parentDeductions)) {
+      const parentProd = await Product.findById(prodId);
+      if (!parentProd) {
+        throw new Error(`Parent product not found for ID: ${prodId}`);
       }
+      if (parentProd.stock < requiredQty) {
+        throw new Error(`Insufficient stock for product "${parentProd.name}". Required: ${requiredQty} ${parentProd.unit}, Available: ${parentProd.stock} ${parentProd.unit}`);
+      }
+    }
 
-      // Handle both unitPrice and sellingPrice for backward compatibility
+    // Pass 2: Apply Deductions, Log Movements, Sync Inventory Table
+    const prisma = require('../../models/prisma').prisma;
+
+    for (const item of items) {
+      const product = productCache[item.productId];
       const price = item.unitPrice || item.sellingPrice;
       const itemTotal = price * item.quantity;
       
       let costPrice = product.costPrice;
       let displayName = product.name;
-      if (item.variantId) {
-        const variant = product.variants.id(item.variantId);
-        if (variant) {
+      
+      if (product.type === 'CHILD') {
+        const parentId = product.parent_id;
+        const parentProduct = await Product.findById(parentId);
+        const requiredQty = item.quantity * product.conversion_quantity;
+
+        // Deduct parent stock
+        parentProduct.stock -= requiredQty;
+        await parentProduct.save();
+
+        // Sync parent inventory record
+        await prisma.inventory.upsert({
+          where: { product_id: parentProduct.id },
+          update: { stock_quantity: parentProduct.stock },
+          create: { product_id: parentProduct.id, stock_quantity: parentProduct.stock }
+        });
+
+        // Log parent stock movement
+        const parentMovement = new StockMovement({
+          productId: parentProduct._id,
+          type: 'OUTGOING',
+          quantity: requiredQty,
+          reference: `Conversion for child product "${product.name}" sale (${invoiceId})`,
+          performedBy: (req as any).user?.fullName || 'System Sale'
+        });
+        await parentMovement.save();
+
+        // Log child stock movement
+        const childMovement = new StockMovement({
+          productId: product._id,
+          type: 'OUTGOING',
+          quantity: item.quantity,
+          reference: `Sale (Invoice: ${invoiceId})`,
+          performedBy: (req as any).user?.fullName || 'System Sale'
+        });
+        await childMovement.save();
+
+      } else {
+        // Standard/Parent product (with or without variant)
+        if (item.variantId) {
+          const variant = product.variants.find((v: any) => String(v._id) === String(item.variantId));
+          variant.stock -= item.quantity;
+          product.stock = product.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+          await product.save();
+
           costPrice = variant.costPrice;
           displayName = `${product.name} (${variant.name})`;
+
+          // Log stock movement for variant
+          const movement = new StockMovement({
+            productId: product._id,
+            variantId: item.variantId,
+            variantName: variant.name,
+            type: 'OUTGOING',
+            quantity: item.quantity,
+            reference: `Sale (Invoice: ${invoiceId})`,
+            performedBy: (req as any).user?.fullName || 'System Sale'
+          });
+          await movement.save();
+        } else {
+          product.stock -= item.quantity;
+          await product.save();
+
+          // Log stock movement
+          const movement = new StockMovement({
+            productId: product._id,
+            type: 'OUTGOING',
+            quantity: item.quantity,
+            reference: `Sale (Invoice: ${invoiceId})`,
+            performedBy: (req as any).user?.fullName || 'System Sale'
+          });
+          await movement.save();
         }
+
+        // Sync inventory record
+        await prisma.inventory.upsert({
+          where: { product_id: product.id },
+          update: { stock_quantity: product.stock },
+          create: { product_id: product.id, stock_quantity: product.stock }
+        });
       }
 
       const itemProfit = (price - costPrice) * item.quantity;
@@ -79,18 +176,27 @@ export const createSale = async (req: Request, res: Response) => {
       });
     }
 
-    const dueAmount = paymentType === 'CREDIT' ? (totalAmount - paidAmount) : 0;
+    // Calculate discount amount
+    const val = parseFloat(discountValue as any) || 0;
+    const discountAmount = discountType === 'PERCENT' ? (totalAmount * (val / 100)) : val;
+    const discountedTotal = Math.max(0, totalAmount - discountAmount);
+    const discountedProfit = totalProfit - discountAmount;
+
+    const dueAmount = paymentType === 'CREDIT' ? (discountedTotal - paidAmount) : 0;
     const status = paymentType === 'CREDIT' ? (dueAmount > 0 ? 'DUE' : 'PAID') : 'PAID';
 
     // Use standard create without session
     const saleArray = await Sale.create([{
       invoiceId,
       items: processedItems,
-      totalAmount,
+      totalAmount: discountedTotal,
+      discount: discountAmount,
+      discountType,
+      discountValue: val,
       dueAmount,
       paymentType,
       customerId: customerId || null,
-      profit: totalProfit,
+      profit: discountedProfit,
       notes,
       status,
       transactionId,
@@ -108,7 +214,7 @@ export const createSale = async (req: Request, res: Response) => {
 
     if (customerId) {
       const customerUpdate: any = {
-        $inc: { totalSpent: totalAmount },
+        $inc: { totalSpent: discountedTotal },
         $set: { lastPurchaseDate: new Date() }
       };
       
@@ -116,7 +222,7 @@ export const createSale = async (req: Request, res: Response) => {
         customerUpdate.$inc.totalDue = dueAmount;
         customerUpdate.$inc.totalPaid = paidAmount;
       } else {
-        customerUpdate.$inc.totalPaid = totalAmount;
+        customerUpdate.$inc.totalPaid = discountedTotal;
       }
 
       await Customer.findByIdAndUpdate(customerId, customerUpdate);
@@ -139,21 +245,92 @@ export const deleteSale = async (req: Request, res: Response) => {
     }
 
     // 1. Restore stock for each item
+    const prisma = require('../../models/prisma').prisma;
+
     for (const item of sale.items) {
-      if (item.variantId) {
-        await Product.findOneAndUpdate(
-          { _id: item.productId, "variants._id": item.variantId },
-          { 
-            $inc: { 
-              stock: item.quantity, 
-              "variants.$.stock": item.quantity 
-            } 
+      let product = await Product.findById(item.productId);
+      if (product) {
+        if (product.type === 'CHILD') {
+          const parentId = product.parent_id;
+          if (parentId) {
+            const parentProduct = await Product.findById(parentId);
+            if (parentProduct) {
+              const restoredQty = item.quantity * product.conversion_quantity;
+              parentProduct.stock += restoredQty;
+              await parentProduct.save();
+
+              // Sync parent inventory record
+              await prisma.inventory.upsert({
+                where: { product_id: parentProduct.id },
+                update: { stock_quantity: parentProduct.stock },
+                create: { product_id: parentProduct.id, stock_quantity: parentProduct.stock }
+              });
+
+              // Log parent stock movement
+              const parentMovement = new StockMovement({
+                productId: parentProduct._id,
+                type: 'INCOMING',
+                quantity: restoredQty,
+                reference: `Sale Reversal / Return (Invoice: ${sale.invoiceId})`,
+                performedBy: (req as any).user?.fullName || 'System Sale'
+              });
+              await parentMovement.save();
+            }
           }
-        );
-      } else {
-        await Product.findByIdAndUpdate(item.productId, {
-          $inc: { stock: item.quantity }
-        });
+
+          // Log child stock movement
+          const childMovement = new StockMovement({
+            productId: product._id,
+            type: 'INCOMING',
+            quantity: item.quantity,
+            reference: `Sale Reversal / Return (Invoice: ${sale.invoiceId})`,
+            performedBy: (req as any).user?.fullName || 'System Sale'
+          });
+          await childMovement.save();
+
+        } else {
+          // Standard or variant
+          if (item.variantId) {
+            const variant = product.variants.find((v: any) => String(v._id) === String(item.variantId));
+            if (variant) {
+              variant.stock += item.quantity;
+              product.stock = product.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+              await product.save();
+
+              // Log stock movement for variant
+              const movement = new StockMovement({
+                productId: product._id,
+                variantId: item.variantId,
+                variantName: variant.name,
+                type: 'INCOMING',
+                quantity: item.quantity,
+                reference: `Sale Reversal / Return (Invoice: ${sale.invoiceId})`,
+                performedBy: (req as any).user?.fullName || 'System Sale'
+              });
+              await movement.save();
+            }
+          } else {
+            product.stock += item.quantity;
+            await product.save();
+
+            // Log stock movement
+            const movement = new StockMovement({
+              productId: product._id,
+              type: 'INCOMING',
+              quantity: item.quantity,
+              reference: `Sale Reversal / Return (Invoice: ${sale.invoiceId})`,
+              performedBy: (req as any).user?.fullName || 'System Sale'
+            });
+            await movement.save();
+          }
+
+          // Sync inventory record
+          await prisma.inventory.upsert({
+            where: { product_id: product.id },
+            update: { stock_quantity: product.stock },
+            create: { product_id: product.id, stock_quantity: product.stock }
+          });
+        }
       }
     }
 

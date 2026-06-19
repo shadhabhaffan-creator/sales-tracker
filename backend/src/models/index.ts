@@ -13,4 +13,5 @@ export const Warehouse = createModelMock('Warehouse');
 export const StockMovement = createModelMock('StockMovement');
 export const SupplierPayment = createModelMock('SupplierPayment');
 export const Purchase = createModelMock('Purchase');
+export const Inventory = createModelMock('Inventory');
 export { prisma } from './prisma';

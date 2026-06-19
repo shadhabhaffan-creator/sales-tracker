@@ -55,7 +55,10 @@ export default function ProductsPage() {
     sellingPrice: 0, 
     image: '', 
     unit: 'UNIT',
-    supplierId: '' 
+    supplierId: '',
+    type: 'STANDARD',
+    parent_id: '',
+    conversion_quantity: 0
   });
 
   const [supplierPaymentInfo, setSupplierPaymentInfo] = useState({
@@ -201,7 +204,7 @@ export default function ProductsPage() {
         }
       }
     } else {
-      if (formData.stock > 0) {
+      if (formData.type !== 'CHILD' && formData.stock > 0) {
         if (formAllocations.some(a => !a.warehouseId)) {
           toast.error('Please select a warehouse for all allocation entries');
           return;
@@ -252,7 +255,10 @@ export default function ProductsPage() {
         sellingPrice: 0, 
         image: '', 
         unit: 'UNIT', 
-        supplierId: '' 
+        supplierId: '',
+        type: 'STANDARD',
+        parent_id: '',
+        conversion_quantity: 0
       });
       setSupplierPaymentInfo({
         enabled: false,
@@ -313,7 +319,10 @@ export default function ProductsPage() {
                   sellingPrice: 0, 
                   image: '', 
                   unit: 'UNIT',
-                  supplierId: '' 
+                  supplierId: '',
+                  type: 'STANDARD',
+                  parent_id: '',
+                  conversion_quantity: 0
                 }); 
                 setSupplierPaymentInfo({
                   enabled: false,
@@ -428,12 +437,28 @@ export default function ProductsPage() {
                             )}
                           </div>
                           <div>
-                            <p className="font-bold text-white group-hover:text-cyan-400 transition-colors">{product.name}</p>
+                            <p className="font-bold text-white group-hover:text-cyan-400 transition-colors flex items-center gap-2">
+                              {product.name}
+                              {product.type === 'PARENT' && (
+                                <span className="text-[8px] font-black tracking-wider uppercase bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1.5 py-0.5 rounded">
+                                  Raw
+                                </span>
+                              )}
+                              {product.type === 'CHILD' && (
+                                <span className="text-[8px] font-black tracking-wider uppercase bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-1.5 py-0.5 rounded">
+                                  Child
+                                </span>
+                              )}
+                            </p>
                             <div className="flex flex-wrap items-center gap-2 mt-0.5">
                               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{product.sku || 'NO-SKU'}</span>
                               {product.variants && product.variants.length > 0 ? (
                                 <span className="text-[10px] text-indigo-400 font-bold">
                                   • {product.variants.length} packaging options
+                                </span>
+                              ) : product.type === 'CHILD' && product.parent_id ? (
+                                <span className="text-[10px] text-gray-400 font-bold">
+                                  • Parent: {products.find(p => p._id === product.parent_id || p.id === product.parent_id)?.name || 'Bulk Link'}
                                 </span>
                               ) : product.supplierId ? (
                                 <span className="text-[10px] text-cyan-400 font-bold">
@@ -487,7 +512,10 @@ export default function ProductsPage() {
                                 sellingPrice: product.sellingPrice,
                                 image: product.image || '',
                                 unit: product.unit || 'UNIT',
-                                supplierId: product.supplierId?._id || product.supplierId || ''
+                                supplierId: product.supplierId?._id || product.supplierId || '',
+                                type: product.type || 'STANDARD',
+                                parent_id: product.parent_id?._id || product.parent_id || '',
+                                conversion_quantity: product.conversion_quantity || 0
                               });
                               
                               // Pre-populate allocations for normal product
@@ -588,8 +616,23 @@ export default function ProductsPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-bold text-white truncate text-sm">{product.name}</p>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{product.sku || 'NO-SKU'}</p>
+                      <p className="font-bold text-white truncate text-sm flex items-center gap-1.5">
+                        {product.name}
+                        {product.type === 'PARENT' && (
+                          <span className="text-[7px] font-black uppercase bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1 rounded">
+                            Raw
+                          </span>
+                        )}
+                        {product.type === 'CHILD' && (
+                          <span className="text-[7px] font-black uppercase bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-1 rounded">
+                            Child
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
+                        {product.sku || 'NO-SKU'}
+                        {product.type === 'CHILD' && product.parent_id && ` • Parent: ${products.find(p => p._id === product.parent_id || p.id === product.parent_id)?.name || 'Bulk'}`}
+                      </p>
                     </div>
                     <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider ${
                       isOut ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
@@ -634,7 +677,10 @@ export default function ProductsPage() {
                           sellingPrice: product.sellingPrice,
                           image: product.image || '',
                           unit: product.unit || 'UNIT',
-                          supplierId: product.supplierId?._id || product.supplierId || ''
+                          supplierId: product.supplierId?._id || product.supplierId || '',
+                          type: product.type || 'STANDARD',
+                          parent_id: product.parent_id?._id || product.parent_id || '',
+                          conversion_quantity: product.conversion_quantity || 0
                         });
                         
                         // Pre-populate allocations
@@ -748,6 +794,56 @@ export default function ProductsPage() {
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Image URL (Optional)</label>
                         <input placeholder="https://..." className="w-full glass-input" value={formData.image} onChange={(e) => setFormData({...formData, image: e.target.value})} />
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Product Management Type</label>
+                        <select
+                          className="w-full glass-input text-xs font-bold cursor-pointer"
+                          value={formData.type}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            type: e.target.value,
+                            ...(e.target.value !== 'CHILD' ? { parent_id: '', conversion_quantity: 0 } : {})
+                          })}
+                        >
+                          <option value="STANDARD">Standard Product</option>
+                          <option value="PARENT">Raw Material / Bulk Can (Parent)</option>
+                          <option value="CHILD">Converted Sellable Product (Child)</option>
+                        </select>
+                      </div>
+
+                      {formData.type === 'CHILD' && (
+                        <>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Link Parent Product *</label>
+                            <select
+                              required
+                              className="w-full glass-input text-xs font-bold cursor-pointer"
+                              value={formData.parent_id || ''}
+                              onChange={(e) => setFormData({...formData, parent_id: e.target.value})}
+                            >
+                              <option value="">Select Parent Product...</option>
+                              {products.filter(p => p.type === 'PARENT').map(p => (
+                                <option key={p._id} value={p._id}>{p.name} ({p.stock} {p.unit} available)</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Consumption Quantity per Child Unit *</label>
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="e.g. 0.2 (Liters of parent)"
+                              required
+                              className="w-full glass-input font-bold"
+                              value={formData.conversion_quantity || ''}
+                              onChange={(e) => setFormData({...formData, conversion_quantity: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -977,13 +1073,28 @@ export default function ProductsPage() {
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">SKU / Model Number</label>
                             <input placeholder="Unique ID" className="w-full glass-input font-mono font-bold" value={formData.sku} onChange={(e) => setFormData({...formData, sku: e.target.value})} />
                           </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Received Stock Level</label>
-                            <input type="number" placeholder="0" required className="w-full glass-input font-bold" value={formData.stock || ''} onChange={(e) => {
-                              const newStock = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              setFormData({...formData, stock: newStock});
-                            }} />
-                          </div>
+                          {formData.type === 'CHILD' ? (
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Computed Stock Level</label>
+                              <div className="w-full glass-input bg-white/5 text-gray-400 font-bold py-3 px-4 rounded-2xl flex items-center">
+                                {(() => {
+                                  const parent = products.find(p => p._id === formData.parent_id || p.id === formData.parent_id);
+                                  if (parent && formData.conversion_quantity) {
+                                    return Math.floor((parent.stock || 0) / formData.conversion_quantity);
+                                  }
+                                  return 0;
+                                })()} (Derived from Parent)
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Received Stock Level</label>
+                              <input type="number" placeholder="0" required className="w-full glass-input font-bold" value={formData.stock || ''} onChange={(e) => {
+                                const newStock = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                setFormData({...formData, stock: newStock});
+                              }} />
+                            </div>
+                          )}
                         </div>
                         <div className="space-y-4">
                           <div className="space-y-1">
@@ -1034,7 +1145,7 @@ export default function ProductsPage() {
                       </div>
 
                       {/* Warehouse allocations split manager (only for standard items) */}
-                      {formData.stock > 0 && (
+                      {formData.type !== 'CHILD' && formData.stock > 0 && (
                         <div className="space-y-4 pt-6 border-t border-white/5">
                           <div className="flex justify-between items-center">
                             <div>

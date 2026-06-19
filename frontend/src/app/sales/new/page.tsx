@@ -41,6 +41,8 @@ export default function NewSalePage() {
   const [submitting, setSubmitting] = useState(false);
   const [transactionId, setTransactionId] = useState('');
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [discountValue, setDiscountValue] = useState<string>('');
+  const [discountType, setDiscountType] = useState<'FLAT' | 'PERCENT'>('FLAT');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -144,7 +146,10 @@ export default function NewSalePage() {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
-  const total = subtotal;
+  
+  const discountVal = parseFloat(discountValue) || 0;
+  const discountAmount = discountType === 'PERCENT' ? (subtotal * (discountVal / 100)) : discountVal;
+  const total = Math.max(0, subtotal - discountAmount);
 
   const handleSubmit = async () => {
     if (cart.length === 0) {
@@ -165,6 +170,8 @@ export default function NewSalePage() {
           paymentType,
           transactionId: (paymentType === 'UPI' || paymentType === 'BANK') ? transactionId : '',
           customerId: selectedCustomer?._id || null,
+          discountType,
+          discountValue: discountVal,
         }),
       });
 
@@ -367,11 +374,56 @@ export default function NewSalePage() {
                 )}
               </AnimatePresence>
 
+              {/* Discount Input */}
+              <div className="space-y-2 border-t border-b border-white/5 py-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Discount</label>
+                  <div className="flex rounded-lg overflow-hidden border border-white/10 bg-white/5">
+                    <button 
+                      type="button"
+                      onClick={() => setDiscountType('FLAT')}
+                      className={`px-3 py-1 text-[10px] font-black transition-colors ${discountType === 'FLAT' ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                    >
+                      FLAT
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setDiscountType('PERCENT')}
+                      className={`px-3 py-1 text-[10px] font-black transition-colors ${discountType === 'PERCENT' ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                    >
+                      %
+                    </button>
+                  </div>
+                </div>
+                <div className="relative group">
+                  <input 
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder={`Enter discount ${discountType === 'PERCENT' ? '%' : 'amount'}...`}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-white font-bold"
+                    value={discountValue}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0)) {
+                        setDiscountValue(val);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2 py-4">
                 <div className="flex justify-between items-center text-xs font-medium text-gray-500">
                   <span>Subtotal</span>
                   <span>{formatPrice(subtotal)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between items-center text-xs font-medium text-rose-400">
+                    <span>Discount ({discountType === 'PERCENT' ? `${discountVal}%` : 'Flat'})</span>
+                    <span>-{formatPrice(discountAmount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center pt-4">
                   <span className="text-xl font-black text-white">Total Amount</span>
                   <span className="text-3xl font-black text-cyan-400 tracking-tighter">{formatPrice(total)}</span>

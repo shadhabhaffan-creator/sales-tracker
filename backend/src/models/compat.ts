@@ -80,6 +80,7 @@ function getPrismaInclude(modelName: string, populatePaths: string[]) {
       if (path === 'supplierId') include.supplier = true;
       if (path === 'warehouseId') include.warehouse = true;
       if (path === 'variants') include.variants = true;
+      if (path === 'parent_id' || path === 'parentProduct') include.parentProduct = true;
     }
     if (modelName === 'Sale') {
       if (path === 'customerId') include.customer = true;
@@ -319,8 +320,10 @@ function mapPrismaDocToMongoose(doc: any, modelName: string): any {
         }
         return pClone;
       }));
+      clone.currentStock = clone.products.reduce((sum: number, p: any) => sum + (p.stock || 0), 0);
     } else {
       clone.products = makeMongooseArray([]);
+      clone.currentStock = 0;
     }
   }
   
@@ -371,6 +374,9 @@ async function saveMongooseDoc(instance: any, modelName: string) {
     data[key] = val;
   }
   
+  delete data.currentStock;
+  delete data.totalInventoryValue;
+  
   if (modelName === 'Product' && Array.isArray(instance.tags)) {
     data.tags = instance.tags.join(',');
   }
@@ -386,6 +392,12 @@ async function saveMongooseDoc(instance: any, modelName: string) {
   }
   if (data.productId && typeof data.productId === 'object') {
     data.productId = data.productId.id || data.productId._id;
+  }
+  if (data.product_id && typeof data.product_id === 'object') {
+    data.product_id = data.product_id.id || data.product_id._id;
+  }
+  if (data.parent_id && typeof data.parent_id === 'object') {
+    data.parent_id = data.parent_id.id || data.parent_id._id;
   }
   if (data.assignedToId && typeof data.assignedToId === 'object') {
     data.assignedToId = data.assignedToId.id || data.assignedToId._id;
@@ -952,7 +964,7 @@ export class MongooseModelWrapper {
       }
     }
     
-    const doc = await this.findOne(cleanFilter);
+    const doc = await this.executeFindOne(cleanFilter, []);
     if (!doc) return null;
     
     if (variantId) {
@@ -1013,7 +1025,7 @@ export class MongooseModelWrapper {
       });
     }
     
-    return this.findById(doc.id);
+    return await this.executeFindById(doc.id, []);
   }
 
   async findByIdAndDelete(id: string) {

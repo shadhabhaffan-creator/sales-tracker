@@ -7,7 +7,21 @@ export const getProducts = async (req: Request, res: Response) => {
       .populate('supplierId')
       .populate('variants.supplierId')
       .sort({ createdAt: -1 });
-    res.json(products);
+      
+    const productsWithDerivedStock = products.map((p: any) => {
+      const doc = p.toObject ? p.toObject() : { ...p };
+      if (doc.type === 'CHILD' && doc.parent_id) {
+        const parentProduct = products.find((parent: any) => String(parent.id || parent._id) === String(doc.parent_id));
+        if (parentProduct) {
+          doc.stock = Math.floor((parentProduct.stock || 0) / (doc.conversion_quantity || 1));
+        } else {
+          doc.stock = 0;
+        }
+      }
+      return doc;
+    });
+
+    res.json(productsWithDerivedStock);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

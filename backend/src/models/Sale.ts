@@ -14,6 +14,9 @@ const SaleSchema = new Schema({
     unit: { type: String, default: 'UNIT' },
   }],
   totalAmount: { type: Number, required: true },
+  discount: { type: Number, default: 0 },
+  discountType: { type: String, enum: ['FLAT', 'PERCENT'], default: 'FLAT' },
+  discountValue: { type: Number, default: 0 },
   dueAmount: { type: Number, default: 0 }, // Added dueAmount
   paymentType: { type: String, enum: ['CASH', 'UPI', 'BANK', 'CREDIT'], required: true },
   transactionId: { type: String },

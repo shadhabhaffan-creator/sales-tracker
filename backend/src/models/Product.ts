@@ -24,7 +24,10 @@ const ProductSchema = new Schema({
   status: { type: String, enum: ['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK'], default: 'IN_STOCK' },
   supplierId: { type: Schema.Types.ObjectId, ref: 'Supplier' },
   warehouseId: { type: Schema.Types.ObjectId, ref: 'Warehouse' },
-  variants: [VariantSchema]
+  variants: [VariantSchema],
+  type: { type: String, enum: ['PARENT', 'CHILD', 'STANDARD'], default: 'STANDARD' },
+  parent_id: { type: Schema.Types.ObjectId, ref: 'Product' },
+  conversion_quantity: { type: Number }
 }, { timestamps: true });
 
 export const Product = models.Product || model('Product', ProductSchema);

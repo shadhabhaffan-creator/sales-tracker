@@ -267,7 +267,21 @@ export async function fetchWithAuth(
         .select('*, variants:Variant(*)');
 
       if (error) throw new Error(error.message);
-      return mapIds(products);
+
+      // Dynamic stock calculation for CHILD products
+      const productsWithDerivedStock = (products || []).map((p: any) => {
+        if (p.type === 'CHILD' && p.parent_id) {
+          const parentProduct = products.find((parent: any) => parent.id === p.parent_id);
+          if (parentProduct) {
+            p.stock = Math.floor((parentProduct.stock || 0) / (p.conversion_quantity || 1));
+          } else {
+            p.stock = 0;
+          }
+        }
+        return p;
+      });
+
+      return mapIds(productsWithDerivedStock);
     }
 
     if (method === 'POST') {
@@ -284,10 +298,22 @@ export async function fetchWithAuth(
           sellingPrice: body.sellingPrice,
           unit: body.unit || 'UNIT',
           image: body.image || null,
-          supplierId: body.supplierId || null
+          supplierId: body.supplierId || null,
+          type: body.type || 'STANDARD',
+          parent_id: body.parent_id || null,
+          conversion_quantity: body.conversion_quantity || null
         });
 
       if (productErr) throw new Error(productErr.message);
+
+      // Sync Inventory Table
+      if (body.type !== 'CHILD') {
+        await supabase.from('Inventory').insert({
+          id: crypto.randomUUID(),
+          product_id: newId,
+          stock_quantity: body.stock || 0
+        });
+      }
 
       // Save allocations
       if (body.allocations && body.allocations.length > 0) {
@@ -367,11 +393,24 @@ export async function fetchWithAuth(
           sellingPrice: body.sellingPrice,
           unit: body.unit || 'UNIT',
           image: body.image || null,
-          supplierId: body.supplierId || null
+          supplierId: body.supplierId || null,
+          type: body.type || 'STANDARD',
+          parent_id: body.parent_id || null,
+          conversion_quantity: body.conversion_quantity || null
         })
         .eq('id', productId);
 
       if (productErr) throw new Error(productErr.message);
+
+      // Sync Inventory Table
+      if (body.type !== 'CHILD') {
+        const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', productId).maybeSingle();
+        if (inv) {
+          await supabase.from('Inventory').update({ stock_quantity: body.stock || 0 }).eq('id', inv.id);
+        } else {
+          await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: productId, stock_quantity: body.stock || 0 });
+        }
+      }
 
       // Replace allocations
       await supabase.from('WarehouseProduct').delete().eq('productId', productId);
@@ -541,6 +580,50 @@ export async function fetchWithAuth(
       const saleId = crypto.randomUUID();
       const invoiceId = `INV-${Date.now().toString().slice(-6)}`;
       
+      // Pass 1: Aggregate and Validate Stock Levels
+      const parentDeductions: Record<string, number> = {};
+      const productCache: Record<string, any> = {};
+
+      for (const item of body.items) {
+        const { data: prod, error } = await supabase.from('Product').select('*').eq('id', item.productId).single();
+        if (error || !prod) {
+          throw new Error(`Product not found: ${item.name}`);
+        }
+        productCache[item.productId] = prod;
+
+        if (prod.type === 'CHILD') {
+          const pId = prod.parent_id;
+          if (!pId) {
+            throw new Error(`Child product "${prod.name}" has no linked parent product.`);
+          }
+          const neededParentStock = item.quantity * prod.conversion_quantity;
+          parentDeductions[pId] = (parentDeductions[pId] || 0) + neededParentStock;
+        } else {
+          if (item.variantId) {
+            const { data: variant } = await supabase.from('Variant').select('*').eq('id', item.variantId).single();
+            if (!variant) {
+              throw new Error(`Variant not found for product "${prod.name}"`);
+            }
+            if (variant.stock < item.quantity) {
+              throw new Error(`Insufficient stock for variant "${variant.name}" of "${prod.name}". Available: ${variant.stock}`);
+            }
+          } else {
+            parentDeductions[prod.id] = (parentDeductions[prod.id] || 0) + item.quantity;
+          }
+        }
+      }
+
+      // Validate aggregated deductions against current stocks
+      for (const [prodId, requiredQty] of Object.entries(parentDeductions)) {
+        const { data: parentProd } = await supabase.from('Product').select('*').eq('id', prodId).single();
+        if (!parentProd) {
+          throw new Error(`Parent product not found for ID: ${prodId}`);
+        }
+        if (parentProd.stock < requiredQty) {
+          throw new Error(`Insufficient stock for product "${parentProd.name}". Required: ${requiredQty} ${parentProd.unit || 'LITER'}, Available: ${parentProd.stock} ${parentProd.unit || 'LITER'}`);
+        }
+      }
+
       let totalCost = 0;
       let totalAmount = 0;
 
@@ -550,19 +633,60 @@ export async function fetchWithAuth(
         totalAmount += (item.sellingPrice || 0) * (item.quantity || 1);
       }
 
-      const profit = totalAmount - totalCost;
+      const val = parseFloat(body.discountValue) || 0;
+      const discountAmount = body.discountType === 'PERCENT' ? (totalAmount * (val / 100)) : val;
+      const discountedTotal = Math.max(0, totalAmount - discountAmount);
+      const discountedProfit = discountedTotal - totalCost;
+      const dueAmount = body.paymentType === 'CREDIT' ? discountedTotal : 0;
 
-      const { error: saleErr } = await supabase.from('Sale').insert({
-        id: saleId,
-        invoiceId,
-        totalAmount,
-        dueAmount: body.paymentType === 'CREDIT' ? totalAmount : 0,
-        paymentType: body.paymentType,
-        transactionId: body.transactionId || null,
-        customerId: body.customerId || null,
-        profit,
-        status: body.paymentType === 'CREDIT' ? 'UNPAID' : 'PAID'
-      });
+      let saleErr: any;
+      try {
+        const { error } = await supabase.from('Sale').insert({
+          id: saleId,
+          invoiceId,
+          totalAmount: discountedTotal,
+          discount: discountAmount,
+          discountType: body.discountType || 'FLAT',
+          discountValue: val,
+          dueAmount,
+          paymentType: body.paymentType,
+          transactionId: body.transactionId || null,
+          customerId: body.customerId || null,
+          profit: discountedProfit,
+          status: body.paymentType === 'CREDIT' ? 'UNPAID' : 'PAID',
+          notes: body.notes || null
+        });
+        saleErr = error;
+      } catch (err) {
+        saleErr = err;
+      }
+
+      if (saleErr) {
+        const errorMsg = saleErr.message || '';
+        const isColumnError = errorMsg.includes('column') || errorMsg.includes('attribute') || errorMsg.includes('does not exist');
+        
+        if (isColumnError || !saleErr.message) {
+          console.warn('Supabase discount columns missing, falling back to embedding discount in notes...');
+          const discountLabel = body.discountType === 'PERCENT' ? `${val}%` : `${val}`;
+          const fallbackNotes = body.notes 
+            ? `${body.notes}\n[Applied Discount: ${discountLabel}]`
+            : `[Applied Discount: ${discountLabel}]`;
+
+          const { error: retryErr } = await supabase.from('Sale').insert({
+            id: saleId,
+            invoiceId,
+            totalAmount: discountedTotal,
+            dueAmount,
+            paymentType: body.paymentType,
+            transactionId: body.transactionId || null,
+            customerId: body.customerId || null,
+            profit: discountedProfit,
+            status: body.paymentType === 'CREDIT' ? 'UNPAID' : 'PAID',
+            notes: fallbackNotes
+          });
+          saleErr = retryErr;
+        }
+      }
 
       if (saleErr) throw new Error(saleErr.message);
 
@@ -581,16 +705,105 @@ export async function fetchWithAuth(
           unit: item.unit || 'UNIT'
         });
 
-        // Decrement stock
-        if (item.variantId) {
-          const { data: v } = await supabase.from('Variant').select('stock').eq('id', item.variantId).single();
-          if (v) {
-            await supabase.from('Variant').update({ stock: Math.max(0, (v.stock || 0) - item.quantity) }).eq('id', item.variantId);
+        const product = productCache[item.productId];
+
+        if (product.type === 'CHILD') {
+          const parentId = product.parent_id;
+          const { data: parent } = await supabase.from('Product').select('*').eq('id', parentId).single();
+          if (parent) {
+            const requiredQty = item.quantity * product.conversion_quantity;
+            const nextParentStock = Math.max(0, (parent.stock || 0) - requiredQty);
+            
+            // Deduct parent stock
+            await supabase.from('Product').update({ stock: nextParentStock }).eq('id', parentId);
+
+            // Sync parent inventory record
+            const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', parentId).maybeSingle();
+            if (inv) {
+              await supabase.from('Inventory').update({ stock_quantity: nextParentStock }).eq('id', inv.id);
+            } else {
+              await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: parentId, stock_quantity: nextParentStock });
+            }
+
+            // Log parent stock movement
+            await supabase.from('StockMovement').insert({
+              id: crypto.randomUUID(),
+              productId: parentId,
+              type: 'OUTGOING',
+              quantity: requiredQty,
+              reference: `Conversion for child "${product.name}" sale (${invoiceId})`,
+              performedBy: 'System Sale',
+              createdAt: new Date().toISOString()
+            });
+
+            // Log child stock movement
+            await supabase.from('StockMovement').insert({
+              id: crypto.randomUUID(),
+              productId: product.id,
+              type: 'OUTGOING',
+              quantity: item.quantity,
+              reference: `Sale (Invoice: ${invoiceId})`,
+              performedBy: 'System Sale',
+              createdAt: new Date().toISOString()
+            });
           }
-        }
-        const { data: p } = await supabase.from('Product').select('stock').eq('id', item.productId).single();
-        if (p) {
-          await supabase.from('Product').update({ stock: Math.max(0, (p.stock || 0) - item.quantity) }).eq('id', item.productId);
+        } else {
+          // Standard / Variant product
+          if (item.variantId) {
+            const { data: v } = await supabase.from('Variant').select('*').eq('id', item.variantId).single();
+            if (v) {
+              const nextVarStock = Math.max(0, (v.stock || 0) - item.quantity);
+              await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', item.variantId);
+              
+              // Sum variant stocks for product total
+              const { data: allVars } = await supabase.from('Variant').select('stock').eq('productId', product.id);
+              const nextProdStock = (allVars || []).reduce((sum, vr) => sum + (vr.stock || 0), 0);
+              await supabase.from('Product').update({ stock: nextProdStock }).eq('id', product.id);
+
+              // Sync inventory record
+              const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', product.id).maybeSingle();
+              if (inv) {
+                await supabase.from('Inventory').update({ stock_quantity: nextProdStock }).eq('id', inv.id);
+              } else {
+                await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: product.id, stock_quantity: nextProdStock });
+              }
+
+              // Log variant stock movement
+              await supabase.from('StockMovement').insert({
+                id: crypto.randomUUID(),
+                productId: product.id,
+                variantId: item.variantId,
+                variantName: v.name,
+                type: 'OUTGOING',
+                quantity: item.quantity,
+                reference: `Sale (Invoice: ${invoiceId})`,
+                performedBy: 'System Sale',
+                createdAt: new Date().toISOString()
+              });
+            }
+          } else {
+            const nextProdStock = Math.max(0, (product.stock || 0) - item.quantity);
+            await supabase.from('Product').update({ stock: nextProdStock }).eq('id', product.id);
+
+            // Sync inventory record
+            const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', product.id).maybeSingle();
+            if (inv) {
+              await supabase.from('Inventory').update({ stock_quantity: nextProdStock }).eq('id', inv.id);
+            } else {
+              await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: product.id, stock_quantity: nextProdStock });
+            }
+
+            // Log stock movement
+            await supabase.from('StockMovement').insert({
+              id: crypto.randomUUID(),
+              productId: product.id,
+              type: 'OUTGOING',
+              quantity: item.quantity,
+              reference: `Sale (Invoice: ${invoiceId})`,
+              performedBy: 'System Sale',
+              createdAt: new Date().toISOString()
+            });
+          }
         }
       }
 
@@ -599,11 +812,14 @@ export async function fetchWithAuth(
         const { data: cust } = await supabase.from('Customer').select('*').eq('id', body.customerId).single();
         if (cust) {
           const updates: any = {
-            totalSpent: (cust.totalSpent || 0) + totalAmount,
+            totalSpent: (cust.totalSpent || 0) + discountedTotal,
             lastPurchaseDate: new Date().toISOString()
           };
           if (body.paymentType !== 'CREDIT') {
-            updates.totalPaid = (cust.totalPaid || 0) + totalAmount;
+            updates.totalPaid = (cust.totalPaid || 0) + discountedTotal;
+          } else {
+            updates.totalDue = (cust.totalDue || 0) + dueAmount;
+            updates.totalPaid = (cust.totalPaid || 0) + (discountedTotal - dueAmount); // paidAmount
           }
           await supabase.from('Customer').update(updates).eq('id', body.customerId);
         }
@@ -614,6 +830,135 @@ export async function fetchWithAuth(
 
     if (method === 'DELETE') {
       const id = body?.id || parts[1];
+
+      // 1. Fetch sale items to restore stock
+      const { data: saleItems } = await supabase.from('SaleItem').select('*').eq('saleId', id);
+      const { data: sale } = await supabase.from('Sale').select('*').eq('id', id).single();
+      
+      if (saleItems && sale) {
+        for (const item of saleItems) {
+          const { data: p } = await supabase.from('Product').select('*').eq('id', item.productId).single();
+          if (p) {
+            if (p.type === 'CHILD') {
+              const parentId = p.parent_id;
+              const { data: parent } = await supabase.from('Product').select('*').eq('id', parentId).single();
+              if (parent) {
+                const restoredQty = item.quantity * p.conversion_quantity;
+                const nextParentStock = (parent.stock || 0) + restoredQty;
+                await supabase.from('Product').update({ stock: nextParentStock }).eq('id', parentId);
+
+                // Sync inventory
+                const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', parentId).maybeSingle();
+                if (inv) {
+                  await supabase.from('Inventory').update({ stock_quantity: nextParentStock }).eq('id', inv.id);
+                } else {
+                  await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: parentId, stock_quantity: nextParentStock });
+                }
+
+                // Log parent movement
+                await supabase.from('StockMovement').insert({
+                  id: crypto.randomUUID(),
+                  productId: parentId,
+                  type: 'INCOMING',
+                  quantity: restoredQty,
+                  reference: `Sale Reversal / Return (Invoice: ${sale.invoiceId})`,
+                  performedBy: 'System Sale',
+                  createdAt: new Date().toISOString()
+                });
+              }
+
+              // Log child movement
+              await supabase.from('StockMovement').insert({
+                id: crypto.randomUUID(),
+                productId: item.productId,
+                type: 'INCOMING',
+                quantity: item.quantity,
+                reference: `Sale Reversal / Return (Invoice: ${sale.invoiceId})`,
+                performedBy: 'System Sale',
+                createdAt: new Date().toISOString()
+              });
+            } else {
+              // Standard or variant
+              if (item.variantId) {
+                const { data: v } = await supabase.from('Variant').select('stock').eq('id', item.variantId).single();
+                if (v) {
+                  const nextVarStock = (v.stock || 0) + item.quantity;
+                  await supabase.from('Variant').update({ stock: nextVarStock }).eq('id', item.variantId);
+                }
+                
+                // Sum variant stocks for product total
+                const { data: allVars } = await supabase.from('Variant').select('stock').eq('productId', p.id);
+                const nextProdStock = (allVars || []).reduce((sum, vr) => sum + (vr.stock || 0), 0);
+                await supabase.from('Product').update({ stock: nextProdStock }).eq('id', p.id);
+
+                // Sync inventory
+                const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', p.id).maybeSingle();
+                if (inv) {
+                  await supabase.from('Inventory').update({ stock_quantity: nextProdStock }).eq('id', inv.id);
+                } else {
+                  await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: p.id, stock_quantity: nextProdStock });
+                }
+
+                // Log variant stock movement
+                await supabase.from('StockMovement').insert({
+                  id: crypto.randomUUID(),
+                  productId: p.id,
+                  variantId: item.variantId,
+                  variantName: item.variantName || null,
+                  type: 'INCOMING',
+                  quantity: item.quantity,
+                  reference: `Sale Reversal / Return (Invoice: ${sale.invoiceId})`,
+                  performedBy: 'System Sale',
+                  createdAt: new Date().toISOString()
+                });
+              } else {
+                const nextStock = (p.stock || 0) + item.quantity;
+                await supabase.from('Product').update({ stock: nextStock }).eq('id', p.id);
+
+                // Sync inventory
+                const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', p.id).maybeSingle();
+                if (inv) {
+                  await supabase.from('Inventory').update({ stock_quantity: nextStock }).eq('id', inv.id);
+                } else {
+                  await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: p.id, stock_quantity: nextStock });
+                }
+
+                // Log movement
+                await supabase.from('StockMovement').insert({
+                  id: crypto.randomUUID(),
+                  productId: p.id,
+                  type: 'INCOMING',
+                  quantity: item.quantity,
+                  reference: `Sale Reversal / Return (Invoice: ${sale.invoiceId})`,
+                  performedBy: 'System Sale',
+                  createdAt: new Date().toISOString()
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Revert customer balance/stats if customer exists
+      if (sale && sale.customerId) {
+        const custId = sale.customerId.id || sale.customerId._id || sale.customerId;
+        const { data: cust } = await supabase.from('Customer').select('*').eq('id', custId).single();
+        if (cust) {
+          const updates: any = {
+            totalSpent: Math.max(0, (cust.totalSpent || 0) - sale.totalAmount)
+          };
+          if (sale.paymentType === 'CREDIT') {
+            const paidUpfront = sale.totalAmount - (sale.dueAmount || 0);
+            updates.totalDue = Math.max(0, (cust.totalDue || 0) - (sale.dueAmount || 0));
+            updates.totalPaid = Math.max(0, (cust.totalPaid || 0) - paidUpfront);
+          } else {
+            updates.totalPaid = Math.max(0, (cust.totalPaid || 0) - sale.totalAmount);
+          }
+          await supabase.from('Customer').update(updates).eq('id', cust.id);
+        }
+      }
+
+      // 3. Delete sale
       const { error } = await supabase.from('Sale').delete().eq('id', id);
       if (error) throw new Error(error.message);
       return { success: true };
@@ -654,10 +999,75 @@ export async function fetchWithAuth(
 
   // 8. WAREHOUSES
   if (resource === 'warehouses') {
-    if (method === 'GET') {
-      const { data, error } = await supabase.from('Warehouse').select('*');
+    if (parts[1] === 'movements' && method === 'GET') {
+      const { data, error } = await supabase
+        .from('StockMovement')
+        .select(`
+          *,
+          product:Product(*, supplier:Supplier(*)),
+          warehouse:Warehouse(*),
+          sourceWarehouse:Warehouse(*),
+          destinationWarehouse:Warehouse(*)
+        `)
+        .order('createdAt', { ascending: false });
+
       if (error) throw new Error(error.message);
-      return mapIds(data);
+      return mapIds(data?.map(m => ({
+        ...m,
+        productId: m.product ? {
+          ...m.product,
+          supplierId: m.product.supplier
+        } : null,
+        warehouseId: m.warehouse || null,
+        sourceWarehouseId: m.sourceWarehouse || null,
+        destinationWarehouseId: m.destinationWarehouse || null
+      })));
+    }
+
+    if (method === 'GET') {
+      const { data: warehouses, error: whError } = await supabase.from('Warehouse').select('*');
+      if (whError) throw new Error(whError.message);
+      
+      const { data: whProducts, error: whpError } = await supabase.from('WarehouseProduct').select('*');
+      if (whpError) throw new Error(whpError.message);
+      
+      const { data: products, error: prodError } = await supabase.from('Product').select('*');
+      if (prodError) throw new Error(prodError.message);
+      
+      const { data: suppliers, error: supError } = await supabase.from('Supplier').select('*');
+      if (supError) throw new Error(supError.message);
+
+      const warehousesWithProducts = warehouses.map(wh => {
+        const whpList = (whProducts || [])
+          .filter(wp => wp.warehouseId === wh.id)
+          .map(wp => {
+            const productDoc = (products || []).find(p => p.id === wp.productId);
+            let populatedProduct = null;
+            
+            if (productDoc) {
+              const supplierDoc = (suppliers || []).find(s => s.id === productDoc.supplierId);
+              populatedProduct = {
+                ...productDoc,
+                supplierId: supplierDoc ? mapIds(supplierDoc) : null
+              };
+            }
+            
+            return {
+              ...wp,
+              productId: populatedProduct ? mapIds(populatedProduct) : null
+            };
+          });
+          
+        const currentStock = whpList.reduce((sum, wp) => sum + (wp.stock || 0), 0);
+        
+        return {
+          ...wh,
+          products: whpList,
+          currentStock
+        };
+      });
+
+      return mapIds(warehousesWithProducts);
     }
     if (method === 'POST') {
       const newId = crypto.randomUUID();
@@ -835,6 +1245,10 @@ export async function fetchWithAuth(
     if (method === 'POST') {
       const newId = crypto.randomUUID();
       const purchaseId = `PUR-${Date.now().toString().slice(-6)}`;
+
+      const { data: prod } = await supabase.from('Product').select('*').eq('id', body.productId).single();
+      if (!prod) throw new Error('Product not found');
+
       const { error: purchaseErr } = await supabase.from('Purchase').insert({
         id: newId,
         purchaseId,
@@ -866,34 +1280,98 @@ export async function fetchWithAuth(
             quantity: alloc.quantity
           });
 
+          // Determine target product for physical stock increment
+          let targetProductId = body.productId;
+          let targetAllocQty = alloc.quantity;
+
+          if (prod.type === 'CHILD') {
+            targetProductId = prod.parent_id;
+            targetAllocQty = alloc.quantity * (prod.conversion_quantity || 1);
+          }
+
           // Update/upsert warehouse product stock
           const { data: whp } = await supabase.from('WarehouseProduct')
             .select('*')
             .eq('warehouseId', alloc.warehouseId)
-            .eq('productId', body.productId)
+            .eq('productId', targetProductId)
             .maybeSingle();
 
           if (whp) {
             await supabase.from('WarehouseProduct')
-              .update({ stock: (whp.stock || 0) + alloc.quantity })
+              .update({ stock: (whp.stock || 0) + targetAllocQty })
               .eq('id', whp.id);
           } else {
             await supabase.from('WarehouseProduct').insert({
               id: crypto.randomUUID(),
               warehouseId: alloc.warehouseId,
-              productId: body.productId,
-              stock: alloc.quantity
+              productId: targetProductId,
+              stock: targetAllocQty
             });
           }
         }
       }
 
       // Update product inventory stock
-      const { data: prod } = await supabase.from('Product').select('stock').eq('id', body.productId).single();
-      if (prod) {
-        await supabase.from('Product')
-          .update({ stock: (prod.stock || 0) + body.quantity })
-          .eq('id', body.productId);
+      if (prod.type === 'CHILD') {
+        const parentId = prod.parent_id;
+        const { data: parent } = await supabase.from('Product').select('*').eq('id', parentId).single();
+        if (parent) {
+          const bulkQtyAdded = body.quantity * (prod.conversion_quantity || 1);
+          const nextParentStock = (parent.stock || 0) + bulkQtyAdded;
+          await supabase.from('Product').update({ stock: nextParentStock }).eq('id', parentId);
+
+          // Sync parent inventory
+          const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', parentId).maybeSingle();
+          if (inv) {
+            await supabase.from('Inventory').update({ stock_quantity: nextParentStock }).eq('id', inv.id);
+          } else {
+            await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: parentId, stock_quantity: nextParentStock });
+          }
+
+          // Log parent movement
+          await supabase.from('StockMovement').insert({
+            id: crypto.randomUUID(),
+            productId: parentId,
+            type: 'INCOMING',
+            quantity: bulkQtyAdded,
+            reference: `Bulk purchase of child "${prod.name}" (Invoice: ${body.invoiceNumber})`,
+            performedBy: 'System Purchase',
+            createdAt: new Date().toISOString()
+          });
+
+          // Log child movement
+          await supabase.from('StockMovement').insert({
+            id: crypto.randomUUID(),
+            productId: prod.id,
+            type: 'INCOMING',
+            quantity: body.quantity,
+            reference: `Purchase Invoice: ${body.invoiceNumber}`,
+            performedBy: 'System Purchase',
+            createdAt: new Date().toISOString()
+          });
+        }
+      } else {
+        const nextStock = (prod.stock || 0) + body.quantity;
+        await supabase.from('Product').update({ stock: nextStock }).eq('id', body.productId);
+
+        // Sync inventory
+        const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', body.productId).maybeSingle();
+        if (inv) {
+          await supabase.from('Inventory').update({ stock_quantity: nextStock }).eq('id', inv.id);
+        } else {
+          await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: body.productId, stock_quantity: nextStock });
+        }
+
+        // Log movement
+        await supabase.from('StockMovement').insert({
+          id: crypto.randomUUID(),
+          productId: body.productId,
+          type: 'INCOMING',
+          quantity: body.quantity,
+          reference: `Purchase Invoice: ${body.invoiceNumber}`,
+          performedBy: 'System Purchase',
+          createdAt: new Date().toISOString()
+        });
       }
 
       // Record outstanding debt payment
@@ -906,7 +1384,7 @@ export async function fetchWithAuth(
           amountPaid: body.amountPaid || 0,
           remainingBalance: body.remainingBalance,
           paymentDate: new Date().toISOString(),
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days fallback
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           purchaseId: newId,
           notes: body.notes || null,
           paymentMethod: body.paymentMethod,
@@ -1063,6 +1541,93 @@ export async function fetchWithAuth(
           expensesCount: expenses?.length || 0
         },
         trends
+      };
+    }
+  }
+
+  // 13. STOCK MOVEMENTS
+  if (resource === 'stock-movements' && method === 'GET') {
+    const { data, error } = await supabase
+      .from('StockMovement')
+      .select(`
+        *,
+        product:Product(*, supplier:Supplier(*)),
+        warehouse:Warehouse(*),
+        sourceWarehouse:Warehouse(*),
+        destinationWarehouse:Warehouse(*)
+      `)
+      .order('createdAt', { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return mapIds(data?.map(m => ({
+      ...m,
+      productId: m.product ? {
+        ...m.product,
+        supplierId: m.product.supplier
+      } : null,
+      warehouseId: m.warehouse || null,
+      sourceWarehouseId: m.sourceWarehouse || null,
+      destinationWarehouseId: m.destinationWarehouse || null
+    })));
+  }
+
+  // 14. INVENTORY DASHBOARD
+  if (resource === 'inventory') {
+    if (method === 'GET') {
+      const { data: products, error: pError } = await supabase
+        .from('Product')
+        .select('*, variants:Variant(*)');
+      if (pError) throw new Error(pError.message);
+
+      const { data: movements, error: mError } = await supabase
+        .from('StockMovement')
+        .select(`
+          *,
+          product:Product(*)
+        `)
+        .order('createdAt', { ascending: false });
+      if (mError) throw new Error(mError.message);
+
+      // Compute statistics
+      const parentProducts = products?.filter(p => p.type === 'PARENT') || [];
+      const childProducts = products?.filter(p => p.type === 'CHILD') || [];
+      
+      const totalParentStock = parentProducts.reduce((sum, p) => sum + (p.stock || 0), 0);
+      const activeParentProducts = parentProducts.filter(p => (p.stock || 0) > 0).length;
+      const totalLinkedChildren = childProducts.length;
+
+      // Construct parent-child mappings
+      const mappings = parentProducts.map(parent => {
+        const children = childProducts
+          .filter(child => child.parent_id === parent.id)
+          .map(child => ({
+            ...child,
+            stock: Math.floor((parent.stock || 0) / (child.conversion_quantity || 1))
+          }));
+
+        return {
+          parent: mapIds(parent),
+          children: mapIds(children)
+        };
+      });
+
+      // Filter conversion-related movements
+      const conversionMovements = movements?.filter(m => {
+        const prod = m.product;
+        return prod && (prod.type === 'PARENT' || prod.type === 'CHILD');
+      }).map(m => ({
+        ...m,
+        productId: m.product
+      })) || [];
+
+      return {
+        stats: {
+          totalParentStock,
+          activeParentProducts,
+          totalLinkedChildren
+        },
+        mappings,
+        movements: mapIds(conversionMovements)
       };
     }
   }

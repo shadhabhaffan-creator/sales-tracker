@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Purchase, Product, Warehouse, StockMovement, SupplierPayment, Supplier } from '../../models';
+import { Purchase, Product, Warehouse, StockMovement, SupplierPayment, Supplier, Inventory } from '../../models';
 
 export const createPurchase = async (req: Request, res: Response) => {
   try {
@@ -84,48 +84,74 @@ export const createPurchase = async (req: Request, res: Response) => {
       message = 'New product created and added to inventory';
     } else {
       // Product exists - update stock levels
-      if (variantName && variantName.trim() !== '') {
-        const vNameTrim = variantName.trim();
-        const existingVariantIdx = product.variants?.findIndex(
-          (v: any) => v.name.toLowerCase() === vNameTrim.toLowerCase()
-        );
+      if (product.type === 'CHILD') {
+        const parentId = product.parent_id;
+        const parentProduct = await Product.findById(parentId);
+        if (parentProduct) {
+          parentProduct.stock += parsedQty * product.conversion_quantity;
+          await parentProduct.save();
 
-        if (existingVariantIdx !== undefined && existingVariantIdx !== -1) {
-          // Variant exists - increment its stock
-          product.variants[existingVariantIdx].stock += parsedQty;
-        } else {
-          // Variant doesn't exist - create and push it
-          product.variants = product.variants || [];
-          product.variants.push({
-            name: vNameTrim,
-            sku: `VAR-${vNameTrim.toUpperCase().replace(/\s+/g, '-')}-${Math.floor(1000 + Math.random() * 9000)}`,
-            costPrice: parsedCost,
-            sellingPrice: parsedCost * 1.5,
-            stock: parsedQty,
-            unit,
-            supplierId
+          const prisma = require('../../models/prisma').prisma;
+          await prisma.inventory.upsert({
+            where: { product_id: parentProduct.id },
+            update: { stock_quantity: parentProduct.stock },
+            create: { product_id: parentProduct.id, stock_quantity: parentProduct.stock }
           });
         }
-        product.stock += parsedQty;
+        
+        if (!product.supplierId) {
+          product.supplierId = supplierId;
+          await product.save();
+        }
+        message = 'Parent bulk inventory updated successfully';
       } else {
-        // Standard product - increment stock
-        product.stock += parsedQty;
+        // Standard product - update stock levels
+        if (variantName && variantName.trim() !== '') {
+          const vNameTrim = variantName.trim();
+          const existingVariantIdx = product.variants?.findIndex(
+            (v: any) => v.name.toLowerCase() === vNameTrim.toLowerCase()
+          );
+
+          if (existingVariantIdx !== undefined && existingVariantIdx !== -1) {
+            product.variants[existingVariantIdx].stock += parsedQty;
+          } else {
+            product.variants = product.variants || [];
+            product.variants.push({
+              name: vNameTrim,
+              sku: `VAR-${vNameTrim.toUpperCase().replace(/\s+/g, '-')}-${Math.floor(1000 + Math.random() * 9000)}`,
+              costPrice: parsedCost,
+              sellingPrice: parsedCost * 1.5,
+              stock: parsedQty,
+              unit,
+              supplierId
+            });
+          }
+          product.stock += parsedQty;
+        } else {
+          product.stock += parsedQty;
+        }
+        
+        if (!product.supplierId) {
+          product.supplierId = supplierId;
+        }
+        
+        await product.save();
+
+        const prisma = require('../../models/prisma').prisma;
+        await prisma.inventory.upsert({
+          where: { product_id: product.id },
+          update: { stock_quantity: product.stock },
+          create: { product_id: product.id, stock_quantity: product.stock }
+        });
+
+        message = 'Existing inventory updated successfully';
       }
-      
-      // Ensure product is linked to supplier if it wasn't already
-      if (!product.supplierId) {
-        product.supplierId = supplierId;
-      }
-      
-      await product.save();
-      message = 'Existing inventory updated successfully';
     }
 
     // Get Variant details if created/updated
     let variantId: any = undefined;
     let finalVariantName: string = '';
     if (variantName && variantName.trim() !== '') {
-      // Re-fetch or locate the saved variant
       const savedProduct = await Product.findById(product._id);
       const v = savedProduct.variants?.find((v: any) => v.name.toLowerCase() === variantName.trim().toLowerCase());
       if (v) {
@@ -140,52 +166,95 @@ export const createPurchase = async (req: Request, res: Response) => {
       if (warehouse) {
         const allocQty = Number(alloc.quantity) || 0;
         
-        if (variantId) {
-          // Check if variant exists in warehouse
-          const wProdIdx = warehouse.products.findIndex(
-            (p: any) => p.productId.toString() === product._id.toString() && p.variantId?.toString() === variantId.toString()
-          );
+        if (product.type === 'CHILD') {
+          const parentId = product.parent_id;
+          const parentProduct = await Product.findById(parentId);
+          if (parentProduct) {
+            const parentAllocQty = allocQty * product.conversion_quantity;
+            
+            const wProdIdx = warehouse.products.findIndex(
+              (p: any) => p.productId.toString() === parentProduct._id.toString() && !p.variantId
+            );
 
-          if (wProdIdx !== -1) {
-            warehouse.products[wProdIdx].stock += allocQty;
-          } else {
-            warehouse.products.push({
+            if (wProdIdx !== -1) {
+              warehouse.products[wProdIdx].stock += parentAllocQty;
+            } else {
+              warehouse.products.push({
+                productId: parentProduct._id,
+                stock: parentAllocQty
+              });
+            }
+
+            warehouse.currentStock = (warehouse.currentStock || 0) + parentAllocQty;
+            await warehouse.save();
+
+            // Log parent movement
+            await StockMovement.create({
+              productId: parentProduct._id,
+              warehouseId: warehouse._id,
+              type: 'INCOMING',
+              quantity: parentAllocQty,
+              reference: `Bulk purchase of child "${product.name}" (Invoice: ${invoiceNumber})`,
+              performedBy: (req as any).user?.username || 'System Purchase'
+            });
+
+            // Log child movement
+            await StockMovement.create({
               productId: product._id,
-              variantId,
-              variantName: finalVariantName,
-              stock: allocQty
+              warehouseId: warehouse._id,
+              type: 'INCOMING',
+              quantity: allocQty,
+              reference: `Purchase Invoice: ${invoiceNumber}`,
+              performedBy: (req as any).user?.username || 'System Purchase'
             });
           }
         } else {
-          // Check standard product in warehouse
-          const wProdIdx = warehouse.products.findIndex(
-            (p: any) => p.productId.toString() === product._id.toString() && !p.variantId
-          );
+          // Standard / Variant product allocation
+          if (variantId) {
+            const wProdIdx = warehouse.products.findIndex(
+              (p: any) => p.productId.toString() === product._id.toString() && p.variantId?.toString() === variantId.toString()
+            );
 
-          if (wProdIdx !== -1) {
-            warehouse.products[wProdIdx].stock += allocQty;
+            if (wProdIdx !== -1) {
+              warehouse.products[wProdIdx].stock += allocQty;
+            } else {
+              warehouse.products.push({
+                productId: product._id,
+                variantId,
+                variantName: finalVariantName,
+                stock: allocQty
+              });
+            }
           } else {
-            warehouse.products.push({
-              productId: product._id,
-              stock: allocQty
-            });
+            const wProdIdx = warehouse.products.findIndex(
+              (p: any) => p.productId.toString() === product._id.toString() && !p.variantId
+            );
+
+            if (wProdIdx !== -1) {
+              warehouse.products[wProdIdx].stock += allocQty;
+            } else {
+              warehouse.products.push({
+                productId: product._id,
+                stock: allocQty
+              });
+            }
           }
+
+          warehouse.currentStock = (warehouse.currentStock || 0) + allocQty;
+          await warehouse.save();
+
+          // Save Stock Movement record
+          await StockMovement.create({
+            productId: product._id,
+            variantId,
+            variantName: finalVariantName || undefined,
+            warehouseId: warehouse._id,
+            type: 'INCOMING',
+            quantity: allocQty,
+            reference: `Purchase Invoice: ${invoiceNumber}`,
+            performedBy: (req as any).user?.username || 'System Purchase'
+          });
         }
-
-        warehouse.currentStock = (warehouse.currentStock || 0) + allocQty;
-        await warehouse.save();
-
-        // Save Stock Movement record
-        await StockMovement.create({
-          productId: product._id,
-          variantId,
-          variantName: finalVariantName || undefined,
-          warehouseId: warehouse._id,
-          type: 'INCOMING',
-          quantity: allocQty,
-          reference: `Purchase Invoice: ${invoiceNumber}`,
-          performedBy: (req as any).user?.username || 'System Purchase'
-        });
       }
     }
 

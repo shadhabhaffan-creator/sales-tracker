@@ -19,7 +19,8 @@ import {
   Truck,
   Warehouse,
   Wallet,
-  ShoppingBag
+  ShoppingBag,
+  Boxes
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -38,6 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Users, label: 'Customers', href: '/customers' },
     { icon: Banknote, label: 'Settlements', href: '/settlements', permission: 'viewRevenue' },
     { icon: Package, label: 'Products', href: '/products' },
+    { icon: Boxes, label: 'Bulk Inventory', href: '/inventory' },
     { icon: ShoppingBag, label: 'Purchases', href: '/purchases' },
     { icon: Truck, label: 'Suppliers', href: '/suppliers' },
     { icon: Wallet, label: 'Outstanding Payments', href: '/outstanding-payments' },
@@ -56,7 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return hasPermission(item.permission);
   });
 
-  const SidebarContent = ({ isMobile = false }) => (
+  const renderSidebarContent = (isMobile = false) => (
     <div className="flex flex-col h-full bg-slate-950/80 backdrop-blur-xl">
       <div className="p-6 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-3">
@@ -128,7 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{ width: isSidebarOpen ? 280 : 80 }}
         className="hidden md:flex glass-panel m-4 mr-0 rounded-3xl flex-col relative z-40 overflow-hidden border border-white/10 transition-all duration-300"
       >
-        <SidebarContent isMobile={false} />
+        {renderSidebarContent(false)}
       </aside>
 
       {/* Mobile Drawer (visible only on small screens) */}
@@ -151,7 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed top-0 bottom-0 left-0 w-[280px] h-full z-50 md:hidden border-r border-white/10 shadow-2xl"
             >
-              <SidebarContent isMobile={true} />
+              {renderSidebarContent(true)}
             </motion.div>
           </>
         )}
