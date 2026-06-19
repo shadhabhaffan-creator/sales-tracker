@@ -306,6 +306,16 @@ export async function fetchWithAuth(
 
     if (method === 'POST') {
       const newId = crypto.randomUUID();
+      let calculatedStock = body.stock || 0;
+      let calculatedCostPrice = body.costPrice || 0;
+      let calculatedSellingPrice = body.sellingPrice || 0;
+
+      if (body.variants && body.variants.length > 0) {
+        calculatedStock = body.variants.reduce((sum: number, v: any) => sum + (Number(v.stock) || 0), 0);
+        calculatedCostPrice = Number(body.variants[0].costPrice) || 0;
+        calculatedSellingPrice = Number(body.variants[0].sellingPrice) || 0;
+      }
+
       const { error: productErr } = await supabase
         .from('Product')
         .insert({
@@ -313,9 +323,9 @@ export async function fetchWithAuth(
           name: body.name,
           sku: body.sku || null,
           category: body.category || null,
-          stock: body.stock || 0,
-          costPrice: body.costPrice,
-          sellingPrice: body.sellingPrice,
+          stock: calculatedStock,
+          costPrice: calculatedCostPrice,
+          sellingPrice: calculatedSellingPrice,
           unit: body.unit || 'UNIT',
           image: body.image || null,
           supplierId: body.supplierId || null,
@@ -331,7 +341,7 @@ export async function fetchWithAuth(
         await supabase.from('Inventory').insert({
           id: crypto.randomUUID(),
           product_id: newId,
-          stock_quantity: body.stock || 0
+          stock_quantity: calculatedStock
         });
       }
 
@@ -402,15 +412,25 @@ export async function fetchWithAuth(
 
     if (method === 'PUT') {
       const productId = body.id || body._id;
+      let calculatedStock = body.stock || 0;
+      let calculatedCostPrice = body.costPrice || 0;
+      let calculatedSellingPrice = body.sellingPrice || 0;
+
+      if (body.variants && body.variants.length > 0) {
+        calculatedStock = body.variants.reduce((sum: number, v: any) => sum + (Number(v.stock) || 0), 0);
+        calculatedCostPrice = Number(body.variants[0].costPrice) || 0;
+        calculatedSellingPrice = Number(body.variants[0].sellingPrice) || 0;
+      }
+
       const { error: productErr } = await supabase
         .from('Product')
         .update({
           name: body.name,
           sku: body.sku || null,
           category: body.category || null,
-          stock: body.stock || 0,
-          costPrice: body.costPrice,
-          sellingPrice: body.sellingPrice,
+          stock: calculatedStock,
+          costPrice: calculatedCostPrice,
+          sellingPrice: calculatedSellingPrice,
           unit: body.unit || 'UNIT',
           image: body.image || null,
           supplierId: body.supplierId || null,
@@ -426,9 +446,9 @@ export async function fetchWithAuth(
       if (body.type !== 'CHILD') {
         const { data: inv } = await supabase.from('Inventory').select('*').eq('product_id', productId).maybeSingle();
         if (inv) {
-          await supabase.from('Inventory').update({ stock_quantity: body.stock || 0 }).eq('id', inv.id);
+          await supabase.from('Inventory').update({ stock_quantity: calculatedStock }).eq('id', inv.id);
         } else {
-          await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: productId, stock_quantity: body.stock || 0 });
+          await supabase.from('Inventory').insert({ id: crypto.randomUUID(), product_id: productId, stock_quantity: calculatedStock });
         }
       }
 
