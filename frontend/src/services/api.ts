@@ -31,6 +31,7 @@ export async function fetchWithAuth(
   // Parse path segments: remove query params first
   const cleanUrl = endpoint.split('?')[0];
   const parts = cleanUrl.split('/').filter(Boolean);
+  console.log("DEBUG fetchWithAuth endpoint:", endpoint, "method:", method, "parts:", parts);
 
   if (parts.length === 0) return [];
 
