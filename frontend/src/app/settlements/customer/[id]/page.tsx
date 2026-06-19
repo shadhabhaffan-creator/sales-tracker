@@ -102,12 +102,12 @@ export default function CustomerSettlementProfile({ params }: { params: Promise<
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="glass-button bg-cyan-500 hover:bg-cyan-600 shadow-cyan-500/20"
+              className="btn-primary"
             >
               <Banknote size={20} />
               <span className="font-bold">Collect Payment</span>
             </button>
-            <button className="p-3 bg-white/5 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-colors">
+            <button className="p-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-colors">
               <Printer size={20} />
             </button>
           </div>
@@ -115,7 +115,7 @@ export default function CustomerSettlementProfile({ params }: { params: Promise<
 
         {/* Customer Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="glass-panel p-8 rounded-[2.5rem] bg-gradient-to-br from-rose-500/10 to-transparent border-rose-500/20">
+          <div className="glass-panel p-8 rounded-2xl bg-gradient-to-br from-rose-500/10 to-transparent border-rose-500/20">
             <div className="flex justify-between items-start mb-6">
               <div className="w-12 h-12 bg-rose-500/20 rounded-2xl flex items-center justify-center border border-rose-500/20">
                 <ArrowDownRight className="text-rose-400" size={24} />
@@ -126,7 +126,7 @@ export default function CustomerSettlementProfile({ params }: { params: Promise<
             <p className="text-gray-500 text-sm font-bold uppercase tracking-wider">Outstanding Balance</p>
           </div>
 
-          <div className="glass-panel p-8 rounded-[2.5rem] bg-gradient-to-br from-emerald-500/10 to-transparent border-emerald-500/20">
+          <div className="glass-panel p-8 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-transparent border-emerald-500/20">
             <div className="flex justify-between items-start mb-6">
               <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center border border-emerald-500/20">
                 <ArrowUpRight className="text-emerald-400" size={24} />
@@ -137,7 +137,7 @@ export default function CustomerSettlementProfile({ params }: { params: Promise<
             <p className="text-gray-500 text-sm font-bold uppercase tracking-wider">Recovered Payments</p>
           </div>
 
-          <div className="glass-panel p-8 rounded-[2.5rem] bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
+          <div className="glass-panel p-8 rounded-2xl bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
             <div className="flex justify-between items-start mb-6">
               <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center border border-blue-500/20">
                 <ShoppingCart className="text-blue-400" size={24} />
@@ -164,12 +164,12 @@ export default function CustomerSettlementProfile({ params }: { params: Promise<
 
             <div className="space-y-8 relative">
               {timeline.length === 0 ? (
-                <div className="p-12 text-center glass-panel rounded-3xl border border-dashed border-white/10">
+                <div className="p-12 text-center glass-panel rounded-2xl border border-dashed border-white/10">
                   <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">No transactions yet</p>
                 </div>
               ) : timeline.map((item, idx) => (
                 <motion.div 
-                  key={item._id}
+                   key={item._id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
@@ -183,7 +183,7 @@ export default function CustomerSettlementProfile({ params }: { params: Promise<
                   </div>
 
                   {/* Content Card */}
-                  <div className="flex-1 glass-panel p-6 rounded-[2rem] hover:bg-white/5 transition-all group">
+                  <div className="flex-1 glass-panel p-6 rounded-2xl hover:bg-white/5 transition-all group">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -260,7 +260,7 @@ export default function CustomerSettlementProfile({ params }: { params: Promise<
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="glass-panel p-8 rounded-[2rem] max-w-md w-full relative z-10 shadow-2xl border border-white/10"
+                className="glass-panel p-8 rounded-2xl max-w-md w-full relative z-10 shadow-2xl border border-white/10"
               >
                 <div className="w-16 h-16 bg-rose-500/20 rounded-2xl flex items-center justify-center mb-6 mx-auto border border-rose-500/20">
                   <Trash2 className="text-rose-400" size={32} />
@@ -272,13 +272,13 @@ export default function CustomerSettlementProfile({ params }: { params: Promise<
                 <div className="flex gap-4">
                   <button 
                     onClick={() => setDeleteItem(null)}
-                    className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-2xl font-bold transition-all text-gray-400 hover:text-white"
+                    className="flex-1 btn-secondary"
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={() => handleDelete(deleteItem)}
-                    className="flex-1 py-4 bg-rose-500 hover:bg-rose-600 rounded-2xl font-bold transition-all shadow-lg shadow-rose-500/30 text-white"
+                    className="flex-1 btn-danger"
                   >
                     Confirm Delete
                   </button>

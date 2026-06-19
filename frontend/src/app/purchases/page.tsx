@@ -18,6 +18,8 @@ export default function PurchasesPage() {
   const [filteredPurchases, setFilteredPurchases] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -70,11 +72,12 @@ export default function PurchasesPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [purchasesData, dashboardData, suppliersData, warehousesData] = await Promise.all([
+      const [purchasesData, dashboardData, suppliersData, warehousesData, productsData] = await Promise.all([
         fetchWithAuth('/purchases'),
         fetchWithAuth('/purchases/dashboard'),
         fetchWithAuth('/suppliers'),
-        fetchWithAuth('/warehouses')
+        fetchWithAuth('/warehouses'),
+        fetchWithAuth('/products')
       ]);
 
       setPurchases(purchasesData);
@@ -82,6 +85,7 @@ export default function PurchasesPage() {
       setDashboard(dashboardData);
       setSuppliers(suppliersData);
       setWarehouses(warehousesData);
+      setProducts(productsData || []);
 
       // Pre-populate first warehouse allocation row if warehouses exist
       if (warehousesData.length > 0) {
@@ -110,6 +114,18 @@ export default function PurchasesPage() {
       setSelectedSupplierDetails(null);
     }
   }, [purchaseForm.supplierId, suppliers]);
+
+  // Auto-detect product type when product name changes
+  useEffect(() => {
+    if (!purchaseForm.productName.trim()) {
+      setSelectedProduct(null);
+      return;
+    }
+    const matched = products.find(
+      p => p.name.trim().toLowerCase() === purchaseForm.productName.trim().toLowerCase()
+    );
+    setSelectedProduct(matched || null);
+  }, [purchaseForm.productName, products]);
 
   // Handle local searching/filtering
   useEffect(() => {
@@ -154,6 +170,7 @@ export default function PurchasesPage() {
         ? [{ warehouseId: warehouses[0]._id, quantity: 0 }] 
         : []
     });
+    setSelectedProduct(null);
     setIsFormOpen(true);
   };
 
@@ -331,24 +348,24 @@ export default function PurchasesPage() {
           <div className="flex items-center gap-3">
             <button 
               onClick={exportPurchasesToCSV}
-              className="px-4 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+              className="btn-secondary"
             >
-              <Download size={14} />
-              <span>EXPORT</span>
+              <Download size={16} />
+              <span>Export CSV</span>
             </button>
             <button 
               onClick={handleOpenForm}
-              className="px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/20 hover:scale-[1.02] transition-all flex items-center gap-2 cursor-pointer"
+              className="btn-primary"
             >
-              <Plus size={14} />
-              <span>NEW PURCHASE</span>
+              <Plus size={16} />
+              <span>New Purchase</span>
             </button>
           </div>
         </div>
 
         {/* Dashboard Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[130px]">
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[130px]">
             <div>
               <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Total Purchases</span>
               <span className="text-2xl font-black text-white block mt-2">{dashboard.totalPurchases}</span>
@@ -358,7 +375,7 @@ export default function PurchasesPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[130px]">
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[130px]">
             <div>
               <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Total Purchase Value</span>
               <span className="text-2xl font-black text-white block mt-2">₹{dashboard.purchaseValue?.toLocaleString()}</span>
@@ -368,7 +385,7 @@ export default function PurchasesPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[130px]">
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[130px]">
             <div>
               <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest block">Outstanding Amount</span>
               <span className="text-2xl font-black text-rose-400 block mt-2">₹{dashboard.outstandingAmount?.toLocaleString()}</span>
@@ -378,7 +395,7 @@ export default function PurchasesPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[130px]">
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[130px]">
             <div>
               <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest block">Pending Payments</span>
               <span className="text-2xl font-black text-amber-400 block mt-2">{dashboard.pendingPayments}</span>
@@ -390,7 +407,7 @@ export default function PurchasesPage() {
         </div>
 
         {/* Search & Filter bar */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-3xl backdrop-blur-md">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 glass-panel p-4 rounded-2xl">
           <div className="relative w-full md:w-96">
             <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
               <Search size={16} />
@@ -400,7 +417,7 @@ export default function PurchasesPage() {
               placeholder="Search by ID, invoice, product, supplier..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 placeholder-gray-500 font-bold"
+              className="w-full glass-input pl-11 placeholder-gray-500 text-xs"
             />
           </div>
 
@@ -414,7 +431,7 @@ export default function PurchasesPage() {
                 <button 
                   key={st}
                   onClick={() => setStatusFilter(st)}
-                  className={`flex-1 md:flex-none px-4 py-2 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${statusFilter === st ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                  className={`flex-1 md:flex-none px-4 py-2 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${statusFilter === st ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-bold shadow-md' : 'text-gray-400 hover:text-white'}`}
                 >
                   {st.replace('_', ' ')}
                 </button>
@@ -424,7 +441,7 @@ export default function PurchasesPage() {
         </div>
 
         {/* Table Ledger */}
-        <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden">
+        <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3 text-cyan-400">
               <Loader2 className="animate-spin" size={24} />
@@ -454,10 +471,10 @@ export default function PurchasesPage() {
                 </thead>
                 <tbody className="divide-y divide-white/5 text-xs">
                   {filteredPurchases.map((p: any) => {
-                    let statusColor = 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400';
-                    if (p.paymentStatus === 'PAID') statusColor = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
-                    else if (p.paymentStatus === 'DEBT') statusColor = 'bg-rose-500/10 border-rose-500/20 text-rose-400';
-                    else if (p.paymentStatus === 'PARTIALLY_PAID') statusColor = 'bg-amber-500/10 border-amber-500/20 text-amber-400';
+                    let statusBadgeClass = 'badge-primary';
+                    if (p.paymentStatus === 'PAID') statusBadgeClass = 'badge-success';
+                    else if (p.paymentStatus === 'DEBT') statusBadgeClass = 'badge-danger';
+                    else if (p.paymentStatus === 'PARTIALLY_PAID') statusBadgeClass = 'badge-warning';
 
                     return (
                       <tr key={p._id} className="hover:bg-white/5 transition-colors group">
@@ -488,7 +505,7 @@ export default function PurchasesPage() {
                           ₹{p.remainingBalance?.toLocaleString()}
                         </td>
                         <td className="py-4 px-4">
-                          <span className={`px-2 py-0.5 border rounded-lg text-[9px] font-black uppercase tracking-wider ${statusColor}`}>
+                          <span className={statusBadgeClass}>
                             {p.paymentStatus === 'DEBT' ? 'UNPAID / DEBT' : p.paymentStatus?.replace('_', ' ')}
                           </span>
                         </td>
@@ -502,7 +519,7 @@ export default function PurchasesPage() {
                                 setDetailPurchase(p);
                                 setIsDetailModalOpen(true);
                               }}
-                              className="p-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors border border-white/5 cursor-pointer flex items-center justify-center"
+                              className="btn-secondary btn-sm p-0 w-9 h-9"
                               title="Invoice Details"
                             >
                               <Eye size={13} />
@@ -510,7 +527,7 @@ export default function PurchasesPage() {
                             {p.remainingBalance > 0 && isAdmin && (
                               <button 
                                 onClick={() => openPayModal(p)}
-                                className="px-3 py-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg text-white font-black text-[10px] uppercase shadow-lg shadow-cyan-500/25 hover:scale-[1.03] transition-all cursor-pointer"
+                                className="btn-primary btn-sm px-3.5"
                               >
                                 PAY
                               </button>
@@ -541,7 +558,7 @@ export default function PurchasesPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="glass-panel w-full max-w-3xl border border-white/10 rounded-3xl p-6 relative overflow-hidden z-10 flex flex-col max-h-[90vh]"
+                className="glass-panel w-full max-w-3xl border border-white/10 rounded-2xl p-6 relative overflow-hidden z-10 flex flex-col max-h-[90vh]"
               >
                 <div className="flex justify-between items-start shrink-0 pb-4 border-b border-white/10">
                   <div>
@@ -580,7 +597,7 @@ export default function PurchasesPage() {
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Select Supplier *</label>
                       <select 
-                        required className="w-full glass-input text-xs font-bold cursor-pointer"
+                        required className="w-full glass-select"
                         value={purchaseForm.supplierId}
                         onChange={(e) => setPurchaseForm({ ...purchaseForm, supplierId: e.target.value })}
                       >
@@ -626,9 +643,17 @@ export default function PurchasesPage() {
                       <input 
                         type="text" required placeholder="e.g. Organic Energy Drink"
                         className="w-full glass-input text-xs font-bold"
+                        list="purchase-product-suggestions"
                         value={purchaseForm.productName}
                         onChange={(e) => setPurchaseForm({ ...purchaseForm, productName: e.target.value })}
                       />
+                      <datalist id="purchase-product-suggestions">
+                        {products.map(p => (
+                          <option key={p._id || p.id} value={p.name}>
+                            {p.type === 'CHILD' ? `↳ Child (Conv: ${p.conversion_quantity})` : p.type === 'PARENT' ? 'Bulk / Raw Parent' : 'Standard'}
+                          </option>
+                        ))}
+                      </datalist>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Product Variant (Optional)</label>
@@ -642,7 +667,7 @@ export default function PurchasesPage() {
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Unit Type *</label>
                       <select 
-                        required className="w-full glass-input text-xs font-bold cursor-pointer"
+                        required className="w-full glass-select"
                         value={purchaseForm.unit}
                         onChange={(e) => setPurchaseForm({ ...purchaseForm, unit: e.target.value })}
                       >
@@ -661,10 +686,42 @@ export default function PurchasesPage() {
                     </div>
                   </div>
 
+                  {/* Child Product Conversion Banner */}
+                  {selectedProduct?.type === 'CHILD' && (
+                    <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-2xl space-y-2">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle size={14} className="text-amber-400 shrink-0" />
+                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Child / Converted Product Detected</span>
+                      </div>
+                      <p className="text-[10px] text-gray-300 leading-relaxed">
+                        <strong className="text-white">{selectedProduct.name}</strong> is a converted sellable product linked to a parent bulk product.
+                        When you enter the quantity below, that many child units will be purchased — and the equivalent parent stock
+                        (<strong className="text-amber-300">{selectedProduct.conversion_quantity} parent units per child unit</strong>) will be automatically added to the parent product's inventory.
+                        Child stock is always derived automatically — it is never stored manually.
+                      </p>
+                      {(() => {
+                        const parent = products.find(p => (p._id || p.id) === selectedProduct.parent_id);
+                        if (!parent) return null;
+                        const availableChildUnits = Math.floor((parent.stock || 0) / (selectedProduct.conversion_quantity || 1));
+                        return (
+                          <div className="flex gap-4 pt-2 border-t border-amber-500/15 text-[10px] font-bold">
+                            <span className="text-gray-400">Parent Stock: <strong className="text-white">{parent.stock} {parent.unit}</strong></span>
+                            <span className="text-gray-400">Current Available Child Units: <strong className="text-cyan-400">{availableChildUnits}</strong></span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
                   {/* Quantity and Price calculations */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Quantity Purchased *</label>
+                      <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">
+                        {selectedProduct?.type === 'CHILD'
+                          ? `Child Units Received (×${selectedProduct.conversion_quantity} = Parent Stock) *`
+                          : 'Quantity Purchased *'
+                        }
+                      </label>
                       <input 
                         type="number" required min="1"
                         className="w-full glass-input text-xs font-bold"
@@ -692,12 +749,12 @@ export default function PurchasesPage() {
                   </div>
 
                   {/* Warehouse Allocation Section */}
-                  <div className="space-y-3 p-4 bg-white/5 border border-white/5 rounded-3xl relative">
+                  <div className="space-y-3 p-4 bg-white/5 border border-white/5 rounded-2xl relative">
                     <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                      <span className="text-[10px] font-black text-white uppercase tracking-wider block">Warehouse Allocation Split *</span>
+                      <span className="text-[10px] font-black text-white uppercase tracking-wider block">Warehouse Allocation *</span>
                       <button 
                         type="button" onClick={handleAddWarehouseRow}
-                        className="px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[9px] font-black uppercase text-cyan-400 flex items-center gap-1 cursor-pointer"
+                        className="btn-secondary btn-sm flex items-center gap-1"
                       >
                         <Plus size={10} />
                         <span>Add Row</span>
@@ -709,7 +766,7 @@ export default function PurchasesPage() {
                         <div key={idx} className="flex gap-4 items-center">
                           <div className="flex-1">
                             <select 
-                              required className="w-full glass-input text-[11px] font-bold cursor-pointer"
+                              required className="w-full glass-select"
                               value={alloc.warehouseId}
                               onChange={(e) => handleWarehouseAllocationChange(idx, 'warehouseId', e.target.value)}
                             >
@@ -722,7 +779,7 @@ export default function PurchasesPage() {
                           <div className="w-32">
                             <input 
                               type="number" required placeholder="Qty" min="1"
-                              className="w-full glass-input text-[11px] font-bold"
+                              className="w-full glass-input font-bold"
                               value={alloc.quantity || ''}
                               onChange={(e) => handleWarehouseAllocationChange(idx, 'quantity', Math.max(0, Number(e.target.value) || 0))}
                             />
@@ -730,7 +787,7 @@ export default function PurchasesPage() {
                           {purchaseForm.warehouseAllocations.length > 1 && (
                             <button 
                               type="button" onClick={() => handleRemoveWarehouseRow(idx)}
-                              className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-colors border border-rose-500/20 cursor-pointer"
+                              className="btn-danger btn-sm p-0 w-9 h-9"
                             >
                               <Trash2 size={13} />
                             </button>
@@ -771,7 +828,7 @@ export default function PurchasesPage() {
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Payment Method</label>
                         <select 
-                          className="w-full glass-input text-xs font-bold cursor-pointer"
+                          className="w-full glass-select"
                           value={purchaseForm.paymentMethod}
                           onChange={(e) => setPurchaseForm({ ...purchaseForm, paymentMethod: e.target.value })}
                         >
@@ -803,7 +860,7 @@ export default function PurchasesPage() {
                     <button 
                       type="submit" 
                       disabled={actionLoading || totalAllocated !== purchaseForm.quantity}
-                      className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 disabled:opacity-50 disabled:pointer-events-none cursor-pointer flex items-center justify-center transition-all"
+                      className="w-full btn-primary"
                     >
                       {actionLoading ? <Loader2 className="animate-spin" /> : 'SAVE PURCHASE & UPDATE INVENTORY'}
                     </button>
@@ -829,7 +886,7 @@ export default function PurchasesPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="glass-panel w-full max-w-md border border-white/10 rounded-3xl p-6 relative overflow-hidden z-10 space-y-6"
+                className="glass-panel w-full max-w-md border border-white/10 rounded-2xl p-6 relative overflow-hidden z-10 space-y-6"
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -868,7 +925,7 @@ export default function PurchasesPage() {
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Payment Method</label>
                     <select 
-                      className="w-full glass-input text-xs font-bold cursor-pointer"
+                      className="w-full glass-select"
                       value={payFormData.paymentMethod}
                       onChange={(e) => setPayFormData({ ...payFormData, paymentMethod: e.target.value })}
                     >
@@ -906,7 +963,7 @@ export default function PurchasesPage() {
                   <button 
                     type="submit" 
                     disabled={actionLoading}
-                    className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 cursor-pointer flex items-center justify-center transition-all"
+                    className="w-full btn-primary"
                   >
                     {actionLoading ? <Loader2 className="animate-spin" /> : 'RECORD SUPPLIER PAYMENT'}
                   </button>
@@ -931,7 +988,7 @@ export default function PurchasesPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="glass-panel w-full max-w-2xl border border-white/10 rounded-3xl p-6 relative overflow-hidden z-10 flex flex-col max-h-[85vh] space-y-6"
+                className="glass-panel w-full max-w-2xl border border-white/10 rounded-2xl p-6 relative overflow-hidden z-10 flex flex-col max-h-[85vh] space-y-6"
               >
                 <div className="flex justify-between items-start border-b border-white/10 pb-4">
                   <div>
@@ -1040,7 +1097,7 @@ export default function PurchasesPage() {
 
                 <button 
                   onClick={() => setIsDetailModalOpen(false)}
-                  className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white font-black text-xs uppercase cursor-pointer"
+                  className="w-full btn-secondary"
                 >
                   CLOSE INVOICE
                 </button>

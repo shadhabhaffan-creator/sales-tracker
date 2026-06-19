@@ -114,10 +114,10 @@ export default function SettlementsPage() {
 
   const getStatusStyle = (status: string) => {
     switch (status) {
-      case 'PAID': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)]';
-      case 'PARTIAL': return 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_15px_-3px_rgba(245,158,11,0.3)]';
-      case 'OVERDUE': return 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)]';
-      default: return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+      case 'PAID': return 'badge-success';
+      case 'PARTIAL': return 'badge-warning';
+      case 'OVERDUE': return 'badge-danger';
+      default: return 'badge-primary';
     }
   };
 
@@ -139,17 +139,15 @@ export default function SettlementsPage() {
             {isAdmin && (
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="glass-button group pr-6"
+                className="btn-primary"
               >
-                <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center group-hover:bg-cyan-500 transition-colors">
-                  <Plus size={18} />
-                </div>
-                <span className="font-bold">Record Settlement</span>
+                <Plus size={18} />
+                <span>Record Settlement</span>
               </button>
             )}
             <button 
               onClick={exportToPDF}
-              className="p-3 bg-white/5 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-colors"
+              className="btn-secondary flex items-center justify-center p-0 w-11 shrink-0"
             >
               <Download size={20} />
             </button>
@@ -164,7 +162,7 @@ export default function SettlementsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="glass-panel p-6 rounded-[2rem] relative overflow-hidden group hover:scale-[1.02] transition-all"
+              className="glass-panel p-6 rounded-2xl relative overflow-hidden group hover:scale-[1.02] transition-all"
             >
               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                 <stat.icon size={80} />
@@ -192,10 +190,10 @@ export default function SettlementsPage() {
               placeholder="Search by customer name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+              className="w-full glass-input pl-12"
             />
           </div>
-          <div className="flex gap-2 p-1.5 bg-white/5 rounded-2xl border border-white/10 overflow-x-auto w-full md:w-auto scrollbar-hide">
+          <div className="flex gap-2 p-1.5 bg-white/5 rounded-xl border border-white/10 overflow-x-auto w-full md:w-auto scrollbar-hide">
             {['ALL', 'PAID', 'PARTIAL', 'OVERDUE'].map((status) => (
               <button
                 key={status}
@@ -213,18 +211,18 @@ export default function SettlementsPage() {
         </div>
 
         {/* History Table */}
-        <div className="glass-panel rounded-[2.5rem] overflow-hidden border border-white/5">
+        <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-white/5 bg-white/2 overflow-hidden">
-                  <th className="p-6 text-xs font-black uppercase tracking-widest text-gray-500">Customer</th>
-                  <th className="p-6 text-xs font-black uppercase tracking-widest text-gray-500 text-center">Status</th>
-                  <th className="p-6 text-xs font-black uppercase tracking-widest text-gray-500">Amount Paid</th>
-                  <th className="p-6 text-xs font-black uppercase tracking-widest text-gray-500">Remaining</th>
-                  <th className="p-6 text-xs font-black uppercase tracking-widest text-gray-500">Method</th>
-                  <th className="p-6 text-xs font-black uppercase tracking-widest text-gray-500">Date & Handler</th>
-                  <th className="p-6 text-xs font-black uppercase tracking-widest text-gray-500 text-right">Action</th>
+                <tr className="border-b border-white/5 bg-white/2 overflow-hidden text-[10px] font-black tracking-wider uppercase text-slate-500">
+                  <th className="p-6">Customer</th>
+                  <th className="p-6 text-center">Status</th>
+                  <th className="p-6">Amount Paid</th>
+                  <th className="p-6">Remaining</th>
+                  <th className="p-6">Method</th>
+                  <th className="p-6">Date & Handler</th>
+                  <th className="p-6 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -257,7 +255,7 @@ export default function SettlementsPage() {
                       </div>
                     </td>
                     <td className="p-6 text-center">
-                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${getStatusStyle(s.status)}`}>
+                      <span className={getStatusStyle(s.status)}>
                         {s.status}
                       </span>
                     </td>
@@ -285,7 +283,7 @@ export default function SettlementsPage() {
                     </td>
                     <td className="p-6 text-right">
                       <Link href={`/settlements/customer/${s.customerId?._id}`}>
-                        <button className="p-3 hover:bg-white/10 rounded-xl text-gray-400 hover:text-cyan-400 transition-all">
+                        <button className="btn-secondary btn-sm flex items-center justify-center p-0 w-9">
                           <ChevronRight size={20} />
                         </button>
                       </Link>

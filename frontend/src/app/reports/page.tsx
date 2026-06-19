@@ -107,15 +107,15 @@ export default function ReportsPage() {
                 <button 
                   key={r}
                   onClick={() => setRange(r)} 
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${range === r ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'text-gray-500 hover:text-white'}`}
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${range === r ? 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold shadow-sm' : 'text-gray-500 hover:text-white'}`}
                 >
                   {r}
                 </button>
               ))}
             </div>
-            <button className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-all flex items-center gap-2 font-bold text-sm">
-              <Download size={18} />
-              <span>EXPORT PDF</span>
+            <button className="btn-secondary">
+              <Download size={16} />
+              <span>Export PDF</span>
             </button>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function ReportsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Chart */}
-          <div className="lg:col-span-2 glass-panel p-8 rounded-[2.5rem] border border-white/10 flex flex-col h-[500px]">
+          <div className="lg:col-span-2 glass-panel p-8 rounded-2xl border border-white/10 flex flex-col h-[500px]">
             <div className="flex items-center justify-between mb-10">
               <div>
                 <h3 className="text-xl font-black text-white flex items-center gap-3">
@@ -180,7 +180,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Profit Breakdown */}
-          <div className="glass-panel p-8 rounded-[2.5rem] border border-white/10 flex flex-col">
+          <div className="glass-panel p-8 rounded-2xl border border-white/10 flex flex-col">
             <h3 className="text-xl font-black text-white mb-8 flex items-center gap-3">
               <PieChartIcon className="text-indigo-400" />
               Efficiency
@@ -240,26 +240,26 @@ export default function ReportsPage() {
         </div>
 
         {/* Transaction Volume */}
-        <div className="glass-panel p-10 rounded-[3rem] border border-white/10">
+        <div className="glass-panel p-10 rounded-2xl border border-white/10">
           <div className="flex items-center gap-3 mb-10">
             <Layers className="text-amber-400" />
             <h3 className="text-xl font-black text-white uppercase tracking-widest">Transaction Volume Breakdown</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="relative">
-              <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5 text-center group hover:border-cyan-500/30 transition-all">
+              <div className="p-8 bg-white/5 rounded-2xl border border-white/5 text-center group hover:border-cyan-500/30 transition-all">
                 <p className="text-5xl font-black text-cyan-400 mb-2 tracking-tighter group-hover:scale-110 transition-transform">{details.salesCount}</p>
                 <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.2em]">Total Sales</p>
               </div>
             </div>
             <div className="relative">
-              <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5 text-center group hover:border-emerald-500/30 transition-all">
+              <div className="p-8 bg-white/5 rounded-2xl border border-white/5 text-center group hover:border-emerald-500/30 transition-all">
                 <p className="text-5xl font-black text-emerald-400 mb-2 tracking-tighter group-hover:scale-110 transition-transform">{details.settlementsCount}</p>
                 <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.2em]">Settlements</p>
               </div>
             </div>
             <div className="relative">
-              <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5 text-center group hover:border-rose-500/30 transition-all">
+              <div className="p-8 bg-white/5 rounded-2xl border border-white/5 text-center group hover:border-rose-500/30 transition-all">
                 <p className="text-5xl font-black text-rose-400 mb-2 tracking-tighter group-hover:scale-110 transition-transform">{details.expensesCount}</p>
                 <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.2em]">Expense Logs</p>
               </div>
@@ -272,7 +272,7 @@ export default function ReportsPage() {
 }
 
 const ReportCard = ({ title, value, icon: Icon, color, trend, isUp }: any) => (
-  <motion.div whileHover={{ y: -5 }} className="glass-panel p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden group">
+  <motion.div whileHover={{ y: -5 }} className="glass-panel p-8 rounded-2xl border border-white/5 relative overflow-hidden group">
     <div className={`absolute top-0 right-0 w-24 h-24 bg-${color}-500/5 blur-[60px] rounded-full -mr-12 -mt-12 group-hover:bg-${color}-500/10 transition-all duration-700`} />
     <div className="relative z-10">
       <div className={`w-14 h-14 bg-${color}-500/10 rounded-2xl flex items-center justify-center mb-6 border border-${color}-500/20 shadow-lg shadow-${color}-500/5`}>
@@ -281,7 +281,7 @@ const ReportCard = ({ title, value, icon: Icon, color, trend, isUp }: any) => (
       <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">{title}</p>
       <h3 className="text-2xl font-black text-white tracking-tighter mb-4">{value}</h3>
       <div className={`flex items-center gap-1.5 ${isUp ? 'text-emerald-400' : 'text-rose-400'}`}>
-        <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-white/5 rounded-lg border border-white/5">{trend}</span>
+        <span className="badge-primary">{trend}</span>
         <span className="text-[10px] text-gray-600 font-bold ml-1 uppercase">Updates in real-time</span>
       </div>
     </div>

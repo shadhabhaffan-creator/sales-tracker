@@ -35,8 +35,8 @@ export default function SettingsPage() {
     <DashboardLayout>
       <div className="space-y-8 max-w-4xl">
         <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-gray-400">Manage your business profile and preferences</p>
+          <h1 className="text-4xl font-black text-white tracking-tight uppercase">Settings</h1>
+          <p className="text-gray-400 font-medium">Manage your business profile and preferences</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -54,9 +54,9 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <label className="text-sm text-gray-400">Default Currency</label>
                 <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4 z-10" />
                   <select 
-                    className="glass-input w-full pl-10"
+                    className="glass-select w-full pl-10"
                     value={currency}
                     onChange={handleCurrencyChange}
                   >
@@ -69,7 +69,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-            <button className="glass-button w-fit">
+            <button className="btn-primary w-fit">
               <Save size={18} />
               <span>Save Changes</span>
             </button>
@@ -105,7 +105,7 @@ export default function SettingsPage() {
               <button 
                 onClick={handleResync}
                 disabled={isResyncing}
-                className="px-6 py-3 bg-amber-500/10 hover:bg-amber-500 text-amber-500 hover:text-white rounded-2xl border border-amber-500/20 transition-all flex items-center gap-2 font-black text-xs uppercase"
+                className="btn-secondary border-amber-500/20 text-amber-400 hover:bg-amber-500/10 flex items-center gap-2"
               >
                 {isResyncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
                 <span>{isResyncing ? 'Processing...' : 'Sync Now'}</span>
@@ -119,11 +119,11 @@ export default function SettingsPage() {
           </div>
           <div className="md:col-span-2 glass-panel p-6 rounded-2xl space-y-6">
             <div className="flex items-center gap-4">
-              <button className="glass-button bg-cyan-500/10 border-cyan-500/20 text-cyan-400">
+              <button className="btn-primary">
                 <Database size={18} />
                 <span>Backup Database</span>
               </button>
-              <button className="text-sm text-gray-500 hover:text-white transition-all">Export JSON</button>
+              <button className="btn-secondary">Export JSON</button>
             </div>
           </div>
         </div>

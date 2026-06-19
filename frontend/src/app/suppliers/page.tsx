@@ -294,7 +294,7 @@ export default function SuppliersPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Total Suppliers</p>
               <h3 className="text-3xl font-black text-white mt-1">{suppliers.length}</h3>
@@ -304,7 +304,7 @@ export default function SuppliersPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Active Status</p>
               <h3 className="text-3xl font-black text-white mt-1">{activeSuppliersCount}</h3>
@@ -314,7 +314,7 @@ export default function SuppliersPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Ingestion History</p>
               <h3 className="text-3xl font-black text-white mt-1">{pendingOrdersCount} <span className="text-xs font-bold text-gray-500">records</span></h3>
@@ -324,7 +324,7 @@ export default function SuppliersPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Total Purchases</p>
               <h3 className="text-3xl font-black text-white mt-1">
@@ -350,7 +350,7 @@ export default function SuppliersPage() {
               placeholder="Search suppliers by name, company, contact..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-gray-500"
+              className="w-full glass-input pl-12"
             />
           </div>
 
@@ -393,7 +393,7 @@ export default function SuppliersPage() {
             <Loader2 className="animate-spin text-cyan-400 w-12 h-12" />
           </div>
         ) : filteredSuppliers.length === 0 ? (
-          <div className="glass-panel p-20 text-center rounded-[3rem] border border-white/5">
+          <div className="glass-panel p-20 text-center rounded-2xl border border-white/5">
             <Truck className="w-16 h-16 text-gray-600 mx-auto mb-6" />
             <h3 className="text-xl font-bold text-gray-400">No Suppliers Registered</h3>
             <p className="text-gray-500 text-sm mt-2">Try adjusting your filters or register a new supplier to link products.</p>
@@ -407,7 +407,7 @@ export default function SuppliersPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 onClick={() => setSelectedSupplier(supplier)}
-                className="glass-panel p-6 rounded-[2.5rem] border border-white/5 hover:scale-[1.01] hover:border-cyan-500/20 hover:shadow-lg hover:shadow-cyan-500/5 transition-all cursor-pointer flex flex-col justify-between"
+                className="glass-panel p-6 rounded-2xl border border-white/5 hover:scale-[1.01] hover:border-cyan-500/20 hover:shadow-lg hover:shadow-cyan-500/5 transition-all cursor-pointer flex flex-col justify-between"
               >
                 <div>
                   <div className="flex justify-between items-center mb-6">
@@ -451,7 +451,7 @@ export default function SuppliersPage() {
                   {isAdmin ? (
                     <button 
                       onClick={(e) => openPurchaseModal(e, supplier)}
-                      className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/25 rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                      className="btn-secondary btn-sm"
                     >
                       <Plus size={12} />
                       <span>Ingest Stock</span>
@@ -484,11 +484,11 @@ export default function SuppliersPage() {
           </div>
         ) : (
           /* Table View */
-          <div className="glass-panel rounded-[2.5rem] overflow-hidden border border-white/5">
+          <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                  <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
                     <th className="p-6">Supplier</th>
                     <th className="p-6">Contact Person</th>
                     <th className="p-6">Company</th>
@@ -526,19 +526,19 @@ export default function SuppliersPage() {
                             <>
                               <button 
                                 onClick={(e) => openPurchaseModal(e, supplier)}
-                                className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/25 border border-cyan-500/20 rounded-xl text-cyan-400 font-black text-[9px] uppercase tracking-widest cursor-pointer active:scale-95 transition-all mr-2"
+                                className="btn-secondary btn-sm"
                               >
                                 Ingest
                               </button>
                               <button 
                                 onClick={(e) => openEditModal(e, supplier)}
-                                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer border border-white/5"
+                                className="btn-secondary btn-sm flex items-center justify-center p-0 w-9"
                               >
                                 <Edit2 size={13} />
                               </button>
                               <button 
                                 onClick={(e) => handleDeleteSupplier(e, supplier)}
-                                className="p-2.5 bg-white/5 hover:bg-rose-500/10 rounded-lg text-gray-400 hover:text-rose-400 transition-all cursor-pointer border border-white/5"
+                                className="btn-danger btn-sm flex items-center justify-center p-0 w-9"
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -563,7 +563,7 @@ export default function SuppliersPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-                className="glass-panel w-full max-w-2xl p-8 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh] scrollbar-hide"
+                className="glass-panel w-full max-w-2xl p-8 rounded-2xl relative z-10 border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh] scrollbar-hide"
               >
                 <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
                   <div>
@@ -651,7 +651,7 @@ export default function SuppliersPage() {
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Payment Terms</label>
                       <select 
-                        className="w-full glass-input text-xs font-bold cursor-pointer"
+                        className="w-full glass-select"
                         value={formData.paymentTerms} onChange={(e) => setFormData({...formData, paymentTerms: e.target.value})}
                       >
                         <option value="Immediate">Immediate / Advance</option>
@@ -663,7 +663,7 @@ export default function SuppliersPage() {
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Supplier Status</label>
                       <select 
-                        className="w-full glass-input text-xs font-bold cursor-pointer"
+                        className="w-full glass-select"
                         value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}
                       >
                         <option value="ACTIVE">ACTIVE</option>
@@ -698,7 +698,7 @@ export default function SuppliersPage() {
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Notes</label>
                       <textarea 
                         placeholder="Any comments, agreements or payment details..." rows={3}
-                        className="w-full glass-input text-xs" 
+                        className="w-full bg-slate-950/40 border border-white/10 rounded-xl p-3 text-xs focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition-all min-h-[80px] resize-none text-white" 
                         value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} 
                       />
                     </div>
@@ -706,7 +706,7 @@ export default function SuppliersPage() {
 
                   <button 
                     type="submit" 
-                    className="w-full py-5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/25 hover:scale-[1.01] transition-all cursor-pointer flex items-center justify-center active:scale-95"
+                    className="btn-primary w-full"
                   >
                     {editingSupplier ? 'SAVE SUPPLIER PROFILE' : 'REGISTER SUPPLIER ACCOUNT'}
                   </button>
@@ -725,7 +725,7 @@ export default function SuppliersPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-                className="glass-panel w-full max-w-lg p-8 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl"
+                className="glass-panel w-full max-w-lg p-8 rounded-2xl relative z-10 border border-white/10 shadow-2xl"
               >
                 <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
                   <div>
@@ -741,12 +741,11 @@ export default function SuppliersPage() {
                 <form onSubmit={handleRecordPurchase} className="space-y-6">
                   <div className="space-y-4">
                     
-                    {/* Product Selection */}
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Select Product</label>
                       <select 
                         required
-                        className="w-full glass-input text-xs font-bold cursor-pointer"
+                        className="w-full glass-select"
                         value={purchaseData.productId}
                         onChange={(e) => setPurchaseData({...purchaseData, productId: e.target.value})}
                       >
@@ -762,7 +761,7 @@ export default function SuppliersPage() {
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Target Warehouse (Allocation)</label>
                       <select 
                         required
-                        className="w-full glass-input text-xs font-bold cursor-pointer"
+                        className="w-full glass-select"
                         value={purchaseData.warehouseId}
                         onChange={(e) => setPurchaseData({...purchaseData, warehouseId: e.target.value})}
                       >
@@ -805,7 +804,7 @@ export default function SuppliersPage() {
 
                   <button 
                     type="submit" 
-                    className="w-full py-5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-emerald-500/25 hover:scale-[1.01] transition-all cursor-pointer flex items-center justify-center active:scale-95"
+                    className="btn-primary w-full"
                   >
                     SUBMIT INGESTION ORDER
                   </button>

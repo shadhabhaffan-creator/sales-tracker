@@ -140,8 +140,8 @@ export default function Dashboard() {
           </div>
           {canViewRevenue && (
             <div className="flex gap-3">
-              <button className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold hover:bg-white/10 transition-all active:scale-95">Download PDF</button>
-              <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-sm font-bold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all active:scale-95">View Live Reports</button>
+              <button className="btn-secondary">Download PDF</button>
+              <button className="btn-primary" onClick={() => router.push('/reports')}>View Live Reports</button>
             </div>
           )}
         </header>
@@ -184,7 +184,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }} 
               animate={{ opacity: 1, y: 0 }} 
               transition={{ delay: i * 0.1 }} 
-              className="glass-panel p-6 rounded-[2rem] group hover:scale-[1.02] transition-all border border-white/5 relative overflow-hidden"
+              className="glass-panel p-6 rounded-2xl group hover:scale-[1.02] transition-all border border-white/5 relative overflow-hidden"
             >
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-colors" />
               <div className={`${stat.bg} w-12 h-12 rounded-2xl flex items-center justify-center mb-6 border border-white/5`}>
@@ -200,7 +200,7 @@ export default function Dashboard() {
                   ) : (
                     <h3 className="text-3xl font-black tracking-tight text-white">{stat.value}</h3>
                   )}
-                  <span className="text-[10px] font-bold px-2 py-1 rounded-lg text-cyan-400 bg-cyan-400/10 uppercase tracking-widest">
+                  <span className="badge-primary">
                     {stat.trend}
                   </span>
                 </div>
@@ -217,7 +217,7 @@ export default function Dashboard() {
             {canViewRevenue ? (
               <SalesTrendChart data={report?.trends || []} />
             ) : (
-              <div className="glass-panel p-12 text-center rounded-[2.5rem] border border-white/5 flex flex-col items-center justify-center h-[350px]">
+              <div className="glass-panel p-12 text-center rounded-2xl border border-white/5 flex flex-col items-center justify-center h-[350px]">
                 <Lock className="w-12 h-12 text-rose-500 mb-4" />
                 <h3 className="text-lg font-black text-white uppercase tracking-wider">Revenue Charts Locked</h3>
                 <p className="text-gray-500 text-sm mt-1 max-w-sm">You do not have the required permissions to view revenue metrics and trends.</p>

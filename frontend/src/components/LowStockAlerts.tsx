@@ -5,7 +5,7 @@ import { Package, AlertTriangle } from 'lucide-react';
 
 export default function LowStockAlerts({ products }: { products: any[] }) {
   return (
-    <div className="glass-panel p-6 rounded-3xl border border-white/10">
+    <div className="glass-panel p-6 rounded-2xl border border-white/10">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold">Inventory Alerts</h3>
         <span className="px-2 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-lg border border-rose-500/20">

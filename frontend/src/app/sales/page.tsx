@@ -188,17 +188,17 @@ export default function SalesPage() {
     <div className="flex items-center gap-3">
       <button
         onClick={exportToPDF}
-        className="px-4 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+        className="btn-secondary"
       >
-        <Download size={14}/>
+        <Download size={16}/>
         <span>Export PDF</span>
       </button>
 
       {isAdmin && (
         <Link href="/sales/new">
-          <button className="px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/20 hover:scale-[1.02] transition-all flex items-center gap-2 cursor-pointer">
-            <Plus size={14}/>
-            <span>NEW SALE</span>
+          <button className="btn-primary">
+            <Plus size={16}/>
+            <span>New Sale</span>
           </button>
         </Link>
       )}
@@ -206,7 +206,7 @@ export default function SalesPage() {
   </div>
 
   {/* Search & Filters */}
-  <div className="flex flex-col md:flex-row gap-4 bg-white/5 border border-white/10 p-4 rounded-3xl backdrop-blur-md">
+  <div className="flex flex-col md:flex-row gap-4 glass-panel p-4 rounded-2xl">
     <div className="relative flex-1 group">
       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-cyan-400 transition-colors" size={20} />
       <input 
@@ -214,14 +214,14 @@ export default function SalesPage() {
         placeholder="Search by Invoice #, Customer name, or ID..." 
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-gray-500 font-bold"
+        className="w-full glass-input pl-11 placeholder:text-gray-500 text-xs"
       />
     </div>
     
     <select
       value={paymentFilter}
       onChange={(e) => setPaymentFilter(e.target.value)}
-      className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all cursor-pointer font-bold min-w-[180px]"
+      className="glass-select text-xs min-w-[180px]"
     >
       <option value="ALL">All Payment Types</option>
       <option value="CASH">Cash</option>
@@ -231,7 +231,7 @@ export default function SalesPage() {
   </div>
 
   {/* Ledger Table (Desktop) */}
-  <div className="hidden md:block glass-panel rounded-3xl border border-white/10 overflow-hidden">
+  <div className="hidden md:block glass-panel rounded-2xl border border-white/10 overflow-hidden">
     <div className="overflow-x-auto">
       <table className="w-full text-left border-collapse">
         <thead>
@@ -264,9 +264,9 @@ export default function SalesPage() {
               const payment = sale.paymentType || 'CASH';
               const status = sale.status || 'PAID';
               
-              let statusColor = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
-              if (status === 'DUE' || status === 'UNPAID') statusColor = 'bg-rose-500/10 border-rose-500/20 text-rose-400';
-              else if (status === 'PARTIAL') statusColor = 'bg-amber-500/10 border-amber-500/20 text-amber-400';
+              let statusBadgeClass = 'badge-success';
+              if (status === 'DUE' || status === 'UNPAID') statusBadgeClass = 'badge-danger';
+              else if (status === 'PARTIAL') statusBadgeClass = 'badge-warning';
 
               return (
                 <tr key={sale._id || sale.id} className="hover:bg-white/5 transition-colors group">
@@ -276,7 +276,7 @@ export default function SalesPage() {
                   <td className="py-4 px-6 text-right text-white font-bold">{formatPrice(amount)}</td>
                   <td className="py-4 px-6 font-semibold uppercase tracking-wider">{payment}</td>
                   <td className="py-4 px-6">
-                    <span className={`px-2 py-0.5 border rounded-lg text-[9px] font-black uppercase tracking-wider ${statusColor}`}>
+                    <span className={statusBadgeClass}>
                       {status}
                     </span>
                   </td>
@@ -284,7 +284,7 @@ export default function SalesPage() {
                     <div className="flex gap-2 justify-end">
                       <button
                         onClick={() => setSelectedSale(sale)}
-                        className="p-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors border border-white/5 cursor-pointer flex items-center justify-center"
+                        className="btn-secondary btn-sm p-0 w-9 h-9"
                         title="View Invoice"
                       >
                         <Eye size={14} />
@@ -292,7 +292,7 @@ export default function SalesPage() {
                       {isAdmin && (
                         <button
                           onClick={() => handleDelete(sale._id || sale.id)}
-                          className="p-2 bg-white/5 hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 rounded-lg transition-colors border border-transparent hover:border-rose-500/20 cursor-pointer flex items-center justify-center"
+                          className="btn-danger btn-sm p-0 w-9 h-9"
                           title="Delete Sale"
                         >
                           <Trash2 size={14} />
@@ -331,9 +331,9 @@ export default function SalesPage() {
         const payment = sale.paymentType || 'CASH';
         const status = sale.status || 'PAID';
         
-        let statusColor = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
-        if (status === 'DUE' || status === 'UNPAID') statusColor = 'bg-rose-500/10 border-rose-500/20 text-rose-400';
-        else if (status === 'PARTIAL') statusColor = 'bg-amber-500/10 border-amber-500/20 text-amber-400';
+        let statusBadgeClass = 'badge-success';
+        if (status === 'DUE' || status === 'UNPAID') statusBadgeClass = 'badge-danger';
+        else if (status === 'PARTIAL') statusBadgeClass = 'badge-warning';
 
         return (
           <div key={sale._id || sale.id} className="glass-panel p-5 rounded-2xl border border-white/5 space-y-4">
@@ -342,7 +342,7 @@ export default function SalesPage() {
                 <p className="font-bold text-white font-mono text-sm">{invId}</p>
                 <p className="text-gray-400 text-xs mt-0.5">{saleDate}</p>
               </div>
-              <span className={`px-2 py-0.5 border rounded-lg text-[9px] font-black uppercase tracking-wider ${statusColor}`}>
+              <span className={statusBadgeClass}>
                 {status}
               </span>
             </div>
@@ -360,25 +360,25 @@ export default function SalesPage() {
 
             <div className="flex justify-between items-center pt-3 border-t border-white/5">
               <div>
-                <span className="text-[10px] bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-gray-300 font-black uppercase tracking-wider">
+                <span className="badge-muted">
                   {payment}
                 </span>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setSelectedSale(sale)}
-                  className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl transition-colors border border-white/5 cursor-pointer flex items-center justify-center min-h-[44px] min-w-[44px]"
+                  className="btn-secondary btn-sm flex items-center justify-center min-h-[36px] min-w-[36px]"
                   title="View Invoice"
                 >
-                  <Eye size={16} />
+                  <Eye size={14} />
                 </button>
                 {isAdmin && (
                   <button
                     onClick={() => handleDelete(sale._id || sale.id)}
-                    className="p-2.5 bg-white/5 hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 rounded-xl transition-colors border border-transparent hover:border-rose-500/20 cursor-pointer flex items-center justify-center min-h-[44px] min-w-[44px]"
+                    className="btn-danger btn-sm flex items-center justify-center min-h-[36px] min-w-[36px]"
                     title="Delete Sale"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   </button>
                 )}
               </div>

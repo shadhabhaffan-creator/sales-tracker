@@ -72,12 +72,12 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
         initial={{ scale: 0.9, opacity: 0, y: 20 }} 
         animate={{ scale: 1, opacity: 1, y: 0 }} 
         exit={{ scale: 0.9, opacity: 0, y: 20 }} 
-        className="glass-panel w-full max-w-5xl max-h-[90vh] rounded-[3rem] relative z-10 shadow-2xl border border-white/10 overflow-hidden flex flex-col"
+        className="glass-panel w-full max-w-5xl max-h-[90vh] rounded-2xl relative z-10 shadow-2xl border border-white/10 overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="p-8 flex items-center justify-between border-b border-white/5 bg-white/5">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-white/5 rounded-[1.5rem] flex items-center justify-center border border-white/10 shadow-xl">
+            <div className="w-16 h-16 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 shadow-xl">
               <Package size={32} className="text-cyan-400" />
             </div>
             <div>
@@ -107,7 +107,7 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {stats.map((stat, i) => (
-              <div key={i} className="bg-white/5 p-6 rounded-[2rem] border border-white/5 group hover:bg-white/10 transition-all">
+              <div key={i} className="bg-white/5 p-6 rounded-2xl border border-white/5 group hover:bg-white/10 transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{stat.label}</p>
                   <stat.icon className={`${stat.color} opacity-50 group-hover:opacity-100 transition-opacity`} size={18} />
@@ -138,7 +138,7 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
                   );
 
                   return (
-                    <div key={v._id || index} className="bg-white/2 p-6 rounded-[2rem] border border-white/5 space-y-4 hover:border-cyan-500/20 transition-all flex flex-col justify-between">
+                    <div key={v._id || index} className="bg-white/2 p-6 rounded-2xl border border-white/5 space-y-4 hover:border-cyan-500/20 transition-all flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start gap-3">
                           <div>
@@ -212,7 +212,7 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
                 <span>Customer Purchase History</span>
               </div>
               
-              <div className="glass-panel rounded-3xl overflow-hidden border border-white/5 min-h-[300px] flex flex-col">
+              <div className="glass-panel rounded-2xl overflow-hidden border border-white/5 min-h-[300px] flex flex-col">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="bg-white/5 text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -261,7 +261,7 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
                   <ShieldCheck size={14} />
                   <span>Pricing Breakdown</span>
                 </div>
-                <div className="bg-white/5 p-6 rounded-3xl border border-white/5 space-y-4">
+                <div className="bg-white/5 p-6 rounded-2xl border border-white/5 space-y-4">
                   <div className="flex justify-between items-center pb-3 border-b border-white/5">
                     <span className="text-gray-400 text-xs font-medium">Cost Price</span>
                     <span className="text-sm font-bold">{formatPrice(product.costPrice)}</span>
@@ -298,7 +298,7 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
                   <Truck size={14} />
                   <span>Logistics & Storage</span>
                 </div>
-                <div className="bg-white/5 p-6 rounded-3xl border border-white/5 space-y-4 text-xs text-gray-400">
+                <div className="bg-white/5 p-6 rounded-2xl border border-white/5 space-y-4 text-xs text-gray-400">
                   <div className="flex items-center gap-3">
                     <Truck size={16} className="text-cyan-400 shrink-0" />
                     <div>

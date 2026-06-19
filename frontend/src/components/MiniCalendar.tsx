@@ -56,7 +56,7 @@ export default function MiniCalendar({ reminders = [], alerts = [], sales = [] }
   const isBestMonth = format(viewDate, 'MMM yyyy') === bestMonthKey;
 
   return (
-    <div className="glass-panel p-6 rounded-3xl border border-white/10 h-full">
+    <div className="glass-panel p-6 rounded-2xl border border-white/10 h-full">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold">Business Calendar</h3>
         <div className="flex gap-1">

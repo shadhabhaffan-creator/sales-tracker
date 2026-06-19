@@ -205,7 +205,7 @@ export default function NewSalePage() {
         <div className="flex-1 flex flex-col min-h-0 space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button onClick={() => router.back()} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 text-gray-400 hover:text-white">
+              <button onClick={() => router.back()} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 text-gray-400 hover:text-white">
                 <ArrowLeft size={20} />
               </button>
               <div>
@@ -218,7 +218,7 @@ export default function NewSalePage() {
               <input 
                 type="text" 
                 placeholder="Find product or SKU..." 
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+                className="w-full glass-input pl-11 text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -245,7 +245,7 @@ export default function NewSalePage() {
                     animate={{ opacity: 1, y: 0 }}
                     whileHover={{ y: -4 }}
                     onClick={() => addToCart(product)}
-                    className="glass-panel p-5 rounded-3xl border border-white/5 group cursor-pointer relative overflow-hidden"
+                    className="glass-panel p-5 rounded-2xl border border-white/5 group cursor-pointer relative overflow-hidden"
                   >
                     <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="w-8 h-8 bg-cyan-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-cyan-500/30">
@@ -269,7 +269,7 @@ export default function NewSalePage() {
 
         {/* Checkout Section */}
         <div className="w-full lg:w-[450px] flex flex-col">
-          <div className="glass-panel rounded-[3rem] border border-white/10 overflow-hidden flex flex-col h-full bg-slate-950/40 backdrop-blur-xl relative">
+          <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden flex flex-col h-full bg-slate-950/40 backdrop-blur-xl relative">
             {/* Cart Header */}
             <div className="p-5 border-b border-white/5 bg-white/5">
               <div className="flex items-center justify-between mb-4">
@@ -287,7 +287,7 @@ export default function NewSalePage() {
               {/* Customer Selector */}
               <button 
                 onClick={() => setIsCustomerModalOpen(true)}
-                className={`w-full p-3 rounded-2xl border transition-all flex items-center justify-between text-left ${selectedCustomer ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                className={`w-full p-3 rounded-xl border transition-all flex items-center justify-between text-left ${selectedCustomer ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
               >
                 <div className="flex items-center gap-2.5">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedCustomer ? 'bg-indigo-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
@@ -380,7 +380,7 @@ export default function NewSalePage() {
                     <input 
                       type="text"
                       placeholder="Enter Reference Number..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-white font-mono"
+                      className="w-full glass-input text-xs font-mono"
                       value={transactionId}
                       onChange={(e) => setTransactionId(e.target.value)}
                     />
@@ -415,7 +415,7 @@ export default function NewSalePage() {
                     min="0"
                     step="any"
                     placeholder={`Enter discount ${discountType === 'PERCENT' ? '%' : 'amount'}...`}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-white font-bold"
+                    className="w-full glass-input text-xs font-bold"
                     value={discountValue}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -447,11 +447,7 @@ export default function NewSalePage() {
               <button 
                 onClick={handleSubmit} 
                 disabled={submitting || cart.length === 0} 
-                className={`w-full py-3.5 rounded-xl text-white font-black text-xs shadow-2xl transition-all flex items-center justify-center gap-2 active:scale-95 ${
-                  (submitting || cart.length === 0)
-                    ? 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed shadow-none'
-                    : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 shadow-cyan-500/20 hover:shadow-cyan-500/30'
-                }`}
+                className="w-full btn-primary"
               >
                 {submitting ? (
                   <Loader2 className="animate-spin" size={16} />
@@ -470,18 +466,18 @@ export default function NewSalePage() {
         {isCustomerModalOpen && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCustomerModalOpen(false)} className="absolute inset-0 bg-black/90 backdrop-blur-xl" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="glass-panel w-full max-w-2xl p-10 rounded-[3rem] relative z-10 border border-white/10">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="glass-panel w-full max-w-2xl p-10 rounded-2xl relative z-10 border border-white/10">
               <div className="flex justify-between items-center mb-8">
                 <div>
                   <h2 className="text-3xl font-black text-white tracking-tight">Select Customer</h2>
                   <p className="text-gray-400 text-sm mt-1">Assign this sale to a client record</p>
                 </div>
-                <button onClick={() => setIsCustomerModalOpen(false)} className="p-3 bg-white/5 rounded-2xl text-gray-400 hover:text-white"><X size={24} /></button>
+                <button onClick={() => setIsCustomerModalOpen(false)} className="p-3 bg-white/5 rounded-xl text-gray-400 hover:text-white"><X size={24} /></button>
               </div>
 
               <div className="relative mb-8">
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-                <input placeholder="Search customers by name or phone..." className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" />
+                <input placeholder="Search customers by name or phone..." className="w-full glass-input pl-14 text-sm" />
               </div>
 
               <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2 scrollbar-hide">

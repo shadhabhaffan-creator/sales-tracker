@@ -90,7 +90,7 @@ export default function ExpensesPage() {
             <p className="text-gray-400 font-medium">Monitor and categorize business spending</p>
           </div>
           {isAdmin && (
-            <button onClick={() => setIsModalOpen(true)} className="px-6 py-3 bg-gradient-to-r from-rose-500 to-orange-600 rounded-2xl text-white font-black text-sm shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 transition-all flex items-center gap-2">
+            <button onClick={() => setIsModalOpen(true)} className="btn-primary">
               <Plus size={18} />
               <span>RECORD EXPENSE</span>
             </button>
@@ -108,20 +108,20 @@ export default function ExpensesPage() {
                   placeholder="Search expenses by title or category..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all"
+                  className="w-full glass-input pl-12"
                 />
               </div>
-              <button className="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-gray-400 flex items-center gap-2 hover:bg-white/10 transition-all">
+              <button className="btn-secondary">
                 <Filter size={18} />
                 <span>Filters</span>
               </button>
             </div>
 
-            <div className="glass-panel rounded-[2.5rem] overflow-hidden border border-white/10">
+            <div className="glass-panel rounded-2xl overflow-hidden border border-white/10">
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                    <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
                       <th className="p-6">Description</th>
                       <th className="p-6">Category</th>
                       <th className="p-6">Payment</th>
@@ -152,11 +152,11 @@ export default function ExpensesPage() {
                           </span>
                         </td>
                         <td className="p-6">
-                          <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-tighter ${
-                            expense.paymentMethod === 'CASH' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                            expense.paymentMethod === 'UPI' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
-                            'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                          }`}>
+                          <span className={
+                            expense.paymentMethod === 'CASH' ? 'badge-success' :
+                            expense.paymentMethod === 'UPI' ? 'badge-primary' :
+                            'badge-muted'
+                          }>
                             {expense.paymentMethod || 'CASH'}
                           </span>
                           {expense.transactionId && <p className="text-[9px] text-gray-500 mt-1 font-mono">{expense.transactionId}</p>}
@@ -191,7 +191,7 @@ export default function ExpensesPage() {
 
           {/* Side Analytics */}
           <div className="space-y-6">
-            <div className="glass-panel p-8 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-slate-900 to-slate-950 relative overflow-hidden group">
+            <div className="glass-panel p-8 rounded-2xl border border-white/5 bg-gradient-to-br from-slate-900 to-slate-950 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 blur-[80px] rounded-full -mr-16 -mt-16 group-hover:bg-rose-500/20 transition-all duration-700" />
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-6">
@@ -205,8 +205,8 @@ export default function ExpensesPage() {
               </div>
             </div>
 
-            <div className="glass-panel p-8 rounded-[2.5rem] border border-white/5 space-y-6">
-              <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">Category Distribution</h3>
+            <div className="glass-panel p-8 rounded-2xl border border-white/5 space-y-6">
+              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Category Distribution</h3>
               <div className="h-[200px] w-full relative">
                 {categoryData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -259,7 +259,7 @@ export default function ExpensesPage() {
           {isModalOpen && isAdmin && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="glass-panel w-full max-w-lg p-10 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl">
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="glass-panel w-full max-w-lg p-10 rounded-2xl relative z-10 border border-white/10 shadow-2xl">
                 <div className="flex justify-between items-center mb-10">
                   <h2 className="text-3xl font-black text-white tracking-tight">Record Spending</h2>
                   <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-all"><X size={24} /></button>
@@ -270,14 +270,14 @@ export default function ExpensesPage() {
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Expense Title</label>
                     <div className="relative">
                       <Receipt className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                      <input placeholder="e.g. Monthly Rent" required className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
+                      <input placeholder="e.g. Monthly Rent" required className="w-full glass-input pl-14" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Category</label>
-                      <select className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all appearance-none" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
+                      <select className="w-full glass-select" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
                         <option value="Rent">Rent</option>
                         <option value="Salaries">Salaries</option>
                         <option value="Utilities">Utilities</option>
@@ -289,7 +289,7 @@ export default function ExpensesPage() {
                       <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Amount</label>
                       <div className="relative">
                         <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                        <input type="number" step="0.01" required placeholder="0.00" className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-lg font-black text-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all" value={formData.amount || ''} onChange={(e) => setFormData({...formData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value)})} />
+                        <input type="number" step="0.01" required placeholder="0.00" className="w-full glass-input pl-14 text-lg font-black text-rose-400" value={formData.amount || ''} onChange={(e) => setFormData({...formData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value)})} />
                       </div>
                     </div>
                   </div>
@@ -326,7 +326,7 @@ export default function ExpensesPage() {
                         <input 
                           type="text"
                           placeholder="Ref Number..."
-                          className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all text-white font-mono"
+                          className="w-full glass-input font-mono"
                           value={formData.transactionId}
                           onChange={(e) => setFormData({...formData, transactionId: e.target.value})}
                         />
@@ -350,10 +350,10 @@ export default function ExpensesPage() {
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Notes & Remarks</label>
-                    <textarea placeholder="Optional details..." className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all min-h-[100px] resize-none" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
+                    <textarea placeholder="Optional details..." className="w-full bg-slate-950/40 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition-all min-h-[100px] resize-none text-white" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
                   </div>
 
-                  <button type="submit" disabled={loading} className="w-full py-5 bg-gradient-to-r from-rose-500 to-orange-600 rounded-2xl text-white font-black text-sm shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 transition-all active:scale-95 mt-4">
+                  <button type="submit" disabled={loading} className="btn-primary w-full mt-4">
                     {loading ? <Loader2 className="animate-spin mx-auto" /> : 'CONFIRM RECORD'}
                   </button>
                 </form>

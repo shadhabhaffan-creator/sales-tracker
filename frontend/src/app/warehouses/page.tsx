@@ -279,7 +279,7 @@ export default function WarehousesPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Total Warehouses</p>
               <h3 className="text-3xl font-black text-white mt-1">{warehouses.length}</h3>
@@ -289,7 +289,7 @@ export default function WarehousesPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Total Allocated Stock</p>
               <h3 className="text-3xl font-black text-white mt-1">{totalStockCount} <span className="text-xs font-bold text-gray-500">items</span></h3>
@@ -299,7 +299,7 @@ export default function WarehousesPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Available Capacity</p>
               <h3 className="text-3xl font-black text-white mt-1">{availableCapacity} <span className="text-xs font-bold text-gray-500">units</span></h3>
@@ -309,7 +309,7 @@ export default function WarehousesPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Low Stock Items</p>
               <h3 className="text-3xl font-black text-rose-400 mt-1">{lowStockCount}</h3>
@@ -329,7 +329,7 @@ export default function WarehousesPage() {
               placeholder="Search warehouses by name, ID, manager name..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-gray-500"
+              className="w-full glass-input pl-12"
             />
           </div>
 
@@ -370,7 +370,7 @@ export default function WarehousesPage() {
             <Loader2 className="animate-spin text-cyan-400 w-12 h-12" />
           </div>
         ) : filteredWarehouses.length === 0 ? (
-          <div className="glass-panel p-20 text-center rounded-[3rem] border border-white/5">
+          <div className="glass-panel p-20 text-center rounded-2xl border border-white/5">
             <Warehouse className="w-16 h-16 text-gray-600 mx-auto mb-6" />
             <h3 className="text-xl font-bold text-gray-400">No Warehouse Facilities</h3>
             <p className="text-gray-500 text-sm mt-2">Create a warehouse facility to track stock locations and allocations.</p>
@@ -386,7 +386,7 @@ export default function WarehousesPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   onClick={() => setSelectedWarehouse(wh)}
-                  className="glass-panel p-6 rounded-[2.5rem] border border-white/5 hover:scale-[1.01] hover:border-cyan-500/20 hover:shadow-lg hover:shadow-cyan-500/5 transition-all cursor-pointer flex flex-col justify-between"
+                  className="glass-panel p-6 rounded-2xl border border-white/5 hover:scale-[1.01] hover:border-cyan-500/20 hover:shadow-lg hover:shadow-cyan-500/5 transition-all cursor-pointer flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex justify-between items-center mb-6">
@@ -464,11 +464,11 @@ export default function WarehousesPage() {
           </div>
         ) : (
           /* Table view */
-          <div className="glass-panel rounded-[2.5rem] overflow-hidden border border-white/5">
+          <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                  <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
                     <th className="p-6">Warehouse</th>
                     <th className="p-6">ID</th>
                     <th className="p-6">Location</th>
@@ -505,13 +505,13 @@ export default function WarehousesPage() {
                             <>
                               <button 
                                 onClick={(e) => openEditModal(e, wh)}
-                                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer border border-white/5"
+                                className="btn-secondary btn-sm flex items-center justify-center p-0 w-9"
                               >
                                 <Edit2 size={13} />
                               </button>
                               <button 
                                 onClick={(e) => handleDeleteWarehouse(e, wh)}
-                                className="p-2.5 bg-white/5 hover:bg-rose-500/10 rounded-lg text-gray-400 hover:text-rose-400 transition-all cursor-pointer border border-white/5"
+                                className="btn-danger btn-sm flex items-center justify-center p-0 w-9"
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -536,7 +536,7 @@ export default function WarehousesPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-                className="glass-panel w-full max-w-xl p-8 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl"
+                className="glass-panel w-full max-w-xl p-8 rounded-2xl relative z-10 border border-white/10 shadow-2xl"
               >
                 <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
                   <div>
@@ -602,7 +602,7 @@ export default function WarehousesPage() {
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Status</label>
                       <select 
-                        className="w-full glass-input text-xs font-bold cursor-pointer"
+                        className="w-full glass-select"
                         value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}
                       >
                         <option value="ACTIVE">ACTIVE</option>
@@ -613,7 +613,7 @@ export default function WarehousesPage() {
 
                   <button 
                     type="submit" 
-                    className="w-full py-5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/25 hover:scale-[1.01] transition-all cursor-pointer flex items-center justify-center active:scale-95"
+                    className="btn-primary w-full"
                   >
                     {editingWarehouse ? 'SAVE WAREHOUSE PROFILE' : 'CREATE WAREHOUSE FACILITY'}
                   </button>
@@ -632,7 +632,7 @@ export default function WarehousesPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-                className="glass-panel w-full max-w-xl p-8 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl"
+                className="glass-panel w-full max-w-xl p-8 rounded-2xl relative z-10 border border-white/10 shadow-2xl"
               >
                 <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
                   <div>
@@ -647,11 +647,10 @@ export default function WarehousesPage() {
 
                 <form onSubmit={handleApplyMovement} className="space-y-6">
                   
-                  {/* Movement Type */}
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Movement Type</label>
                     <select 
-                      className="w-full glass-input text-xs font-bold cursor-pointer"
+                      className="w-full glass-select"
                       value={transferData.type}
                       onChange={(e) => setTransferData({
                         ...transferData, 
@@ -668,12 +667,11 @@ export default function WarehousesPage() {
                     </select>
                   </div>
 
-                  {/* Product */}
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Select Product</label>
                     <select 
                       required
-                      className="w-full glass-input text-xs font-bold cursor-pointer"
+                      className="w-full glass-select"
                       value={transferData.productId}
                       onChange={(e) => {
                         const pId = e.target.value;
@@ -701,7 +699,7 @@ export default function WarehousesPage() {
                           <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Select Packaging / Variant</label>
                           <select
                             required
-                            className="w-full glass-input text-xs font-bold cursor-pointer"
+                            className="w-full glass-select"
                             value={transferData.variantId}
                             onChange={(e) => setTransferData({ ...transferData, variantId: e.target.value })}
                           >
@@ -723,7 +721,7 @@ export default function WarehousesPage() {
                         <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Source Warehouse (From)</label>
                         <select 
                           required
-                          className="w-full glass-input text-xs font-bold cursor-pointer"
+                          className="w-full glass-select"
                           value={transferData.sourceWarehouseId}
                           onChange={(e) => setTransferData({...transferData, sourceWarehouseId: e.target.value})}
                         >
@@ -737,7 +735,7 @@ export default function WarehousesPage() {
                         <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Destination Warehouse (To)</label>
                         <select 
                           required
-                          className="w-full glass-input text-xs font-bold cursor-pointer"
+                          className="w-full glass-select"
                           value={transferData.destinationWarehouseId}
                           onChange={(e) => setTransferData({...transferData, destinationWarehouseId: e.target.value})}
                         >
@@ -759,7 +757,7 @@ export default function WarehousesPage() {
                       </label>
                       <select 
                         required
-                        className="w-full glass-input text-xs font-bold cursor-pointer"
+                        className="w-full glass-select"
                         value={transferData.warehouseId}
                         onChange={(e) => setTransferData({
                           ...transferData, 
@@ -799,7 +797,7 @@ export default function WarehousesPage() {
 
                   <button 
                     type="submit" 
-                    className="w-full py-5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/25 hover:scale-[1.01] transition-all cursor-pointer flex items-center justify-center active:scale-95"
+                    className="btn-primary w-full"
                   >
                     CONFIRM MOVEMENT ORDER
                   </button>

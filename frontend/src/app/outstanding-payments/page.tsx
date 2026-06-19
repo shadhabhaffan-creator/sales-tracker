@@ -157,16 +157,16 @@ export default function OutstandingPaymentsPage() {
   // Helper to determine status tag
   const getStatusDetails = (payment: any) => {
     if (payment.remainingBalance === 0) {
-      return { label: 'Paid', bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' };
+      return { label: 'Paid', bg: 'badge-success' };
     }
     
     const daysLeft = getDaysRemaining(payment.dueDate);
     if (daysLeft < 0) {
-      return { label: 'Overdue', bg: 'bg-rose-500/10 border-rose-500/20 text-rose-400' };
+      return { label: 'Overdue', bg: 'badge-danger' };
     } else if (daysLeft === 0) {
-      return { label: 'Due Today', bg: 'bg-amber-500/15 border-amber-500/30 text-amber-400 animate-pulse' };
+      return { label: 'Due Today', bg: 'badge-warning animate-pulse' };
     } else {
-      return { label: 'Pending', bg: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' };
+      return { label: 'Pending', bg: 'badge-primary' };
     }
   };
 
@@ -217,10 +217,9 @@ export default function OutstandingPaymentsPage() {
           </div>
         )}
 
-        {/* Dashboard Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           
-          <div className="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
             <div>
               <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Total Liabilities</span>
               <span className="text-2xl font-black tracking-tight text-white block mt-2">
@@ -232,7 +231,7 @@ export default function OutstandingPaymentsPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
             <div>
               <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Active Due Suppliers</span>
               <span className="text-2xl font-black tracking-tight text-white block mt-2">
@@ -244,7 +243,7 @@ export default function OutstandingPaymentsPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[140px] border-rose-500/20">
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[140px] border-rose-500/20">
             <div>
               <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest block">Overdue Invoices</span>
               <span className="text-2xl font-black tracking-tight text-rose-400 block mt-2">
@@ -256,7 +255,7 @@ export default function OutstandingPaymentsPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[140px] border-amber-500/20">
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[140px] border-amber-500/20">
             <div>
               <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest block">Due Today</span>
               <span className="text-2xl font-black tracking-tight text-amber-400 block mt-2 animate-pulse">
@@ -268,7 +267,7 @@ export default function OutstandingPaymentsPage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
             <div>
               <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Upcoming Due</span>
               <span className="text-2xl font-black tracking-tight text-white block mt-2">
@@ -282,8 +281,7 @@ export default function OutstandingPaymentsPage() {
 
         </div>
 
-        {/* Filter and Search Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-3xl backdrop-blur-md">
+        <div className="glass-panel p-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="relative w-full md:w-96">
             <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
               <Search size={16} />
@@ -293,7 +291,7 @@ export default function OutstandingPaymentsPage() {
               placeholder="Search by supplier, company, product, txn reference..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 placeholder-gray-500 font-bold"
+              className="w-full glass-input pl-11"
             />
           </div>
 
@@ -326,7 +324,7 @@ export default function OutstandingPaymentsPage() {
         </div>
 
         {/* Ledger Table */}
-        <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden">
+        <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3 text-cyan-400">
               <Loader2 className="animate-spin" size={24} />
@@ -340,7 +338,7 @@ export default function OutstandingPaymentsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-white/10 text-[9px] font-black text-gray-400 uppercase tracking-widest bg-white/5">
+                  <tr className="border-b border-white/10 text-[10px] font-black text-slate-500 uppercase tracking-wider bg-white/5">
                     <th className="py-5 px-6">Supplier Details</th>
                     <th className="py-5 px-4">Product Name</th>
                     <th className="py-5 px-4">Reference ID</th>
@@ -414,7 +412,7 @@ export default function OutstandingPaymentsPage() {
                           )}
                         </td>
                         <td className="py-4 px-4">
-                          <span className={`px-2.5 py-1 border rounded-lg text-[9px] font-black uppercase tracking-wider ${statusInfo.bg}`}>
+                          <span className={statusInfo.bg}>
                             {statusInfo.label}
                           </span>
                         </td>
@@ -426,7 +424,7 @@ export default function OutstandingPaymentsPage() {
                                   setHistoryPayment(payment);
                                   setIsHistoryModalOpen(true);
                                 }}
-                                className="p-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors border border-white/5 cursor-pointer flex items-center justify-center"
+                                className="btn-secondary btn-sm flex items-center justify-center p-0 w-9"
                                 title="View Payment Logs"
                               >
                                 <FileText size={13} />
@@ -435,7 +433,7 @@ export default function OutstandingPaymentsPage() {
                             {payment.remainingBalance > 0 && isAdmin && (
                               <button 
                                 onClick={() => openPayModal(payment)}
-                                className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg text-white font-black text-[10px] uppercase shadow-lg shadow-cyan-500/25 hover:scale-[1.03] transition-all flex items-center gap-1 cursor-pointer"
+                                className="btn-primary btn-sm"
                               >
                                 <span>PAY</span>
                               </button>
@@ -466,7 +464,7 @@ export default function OutstandingPaymentsPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="glass-panel w-full max-w-lg border border-white/10 rounded-3xl p-6 relative overflow-hidden z-10 space-y-6"
+                className="glass-panel w-full max-w-lg border border-white/10 rounded-2xl p-6 relative overflow-hidden z-10 space-y-6"
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -509,7 +507,7 @@ export default function OutstandingPaymentsPage() {
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Payment Method</label>
                       <select
-                        className="w-full glass-input text-xs font-bold cursor-pointer"
+                        className="w-full glass-select"
                         value={payFormData.paymentMethod}
                         onChange={(e) => setPayFormData({ ...payFormData, paymentMethod: e.target.value })}
                       >
@@ -547,7 +545,7 @@ export default function OutstandingPaymentsPage() {
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Notes</label>
                     <textarea 
-                      placeholder="Enter details of transaction" rows={2} className="w-full glass-input text-xs p-3"
+                      placeholder="Enter details of transaction" rows={2} className="w-full bg-slate-950/40 border border-white/10 rounded-xl p-3 text-xs focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition-all min-h-[60px] resize-none text-white"
                       value={payFormData.notes}
                       onChange={(e) => setPayFormData({ ...payFormData, notes: e.target.value })}
                     />
@@ -556,7 +554,7 @@ export default function OutstandingPaymentsPage() {
                   <button 
                     type="submit" 
                     disabled={actionLoading}
-                    className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 cursor-pointer flex items-center justify-center active:scale-95 transition-all"
+                    className="btn-primary w-full"
                   >
                     {actionLoading ? <Loader2 className="animate-spin" /> : 'CONFIRM SUPPLIER PAYMENT'}
                   </button>
@@ -581,7 +579,7 @@ export default function OutstandingPaymentsPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="glass-panel w-full max-w-lg border border-white/10 rounded-3xl p-6 relative overflow-hidden z-10 space-y-6"
+                className="glass-panel w-full max-w-lg border border-white/10 rounded-2xl p-6 relative overflow-hidden z-10 space-y-6"
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -627,7 +625,7 @@ export default function OutstandingPaymentsPage() {
 
                 <button 
                   onClick={() => setIsHistoryModalOpen(false)}
-                  className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white font-black text-xs uppercase cursor-pointer text-center"
+                  className="btn-secondary w-full"
                 >
                   CLOSE LEDGER
                 </button>

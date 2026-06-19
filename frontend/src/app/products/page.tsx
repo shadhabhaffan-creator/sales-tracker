@@ -339,17 +339,17 @@ export default function ProductsPage() {
                 setFormVariants([]);
                 setIsModalOpen(true); 
               }} 
-              className="px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.02] cursor-pointer transition-all active:scale-95 flex items-center gap-2"
+              className="btn-primary flex items-center gap-2"
             >
               <Plus size={18} />
-              <span>ADD NEW PRODUCT</span>
+              <span>Add Product</span>
             </button>
           )}
         </div>
 
         {/* Analytics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 relative overflow-hidden group">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-cyan-400 border border-cyan-500/20">
                 <BarChart2 size={24} />
@@ -360,7 +360,7 @@ export default function ProductsPage() {
               </div>
             </div>
           </div>
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 relative overflow-hidden group">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-400 border border-amber-500/20">
                 <AlertCircle size={24} />
@@ -371,7 +371,7 @@ export default function ProductsPage() {
               </div>
             </div>
           </div>
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 relative overflow-hidden group">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-400 border border-rose-500/20">
                 <PieChart size={24} />
@@ -393,13 +393,13 @@ export default function ProductsPage() {
               placeholder="Search by product name, SKU, or category..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-gray-500"
+              className="w-full glass-input pl-12 placeholder:text-gray-500"
             />
           </div>
         </div>
 
         {/* Products Table (Desktop) */}
-        <div className="hidden md:block glass-panel rounded-[2.5rem] overflow-hidden border border-white/10">
+        <div className="hidden md:block glass-panel rounded-2xl overflow-hidden border border-white/10">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
@@ -490,13 +490,13 @@ export default function ProductsPage() {
                         </div>
                       </td>
                       <td className="p-6">
-                        <div className={`px-3 py-1.5 rounded-xl text-[10px] font-black border uppercase tracking-widest text-center inline-block ${
-                          isOut ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                          isLow ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                          'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                        }`}>
+                        <span className={
+                          isOut ? 'badge-danger' :
+                          isLow ? 'badge-warning' :
+                          'badge-success'
+                        }>
                           {isOut ? 'OUT OF STOCK' : isLow ? 'LOW STOCK' : 'IN STOCK'}
-                        </div>
+                        </span>
                       </td>
                       <td className="p-6">
                         <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
@@ -566,16 +566,18 @@ export default function ProductsPage() {
 
                               setIsModalOpen(true);
                             }}
-                            className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-white transition-all border border-transparent hover:border-white/10 cursor-pointer"
+                            className="btn-secondary btn-sm p-0 w-9 h-9"
+                            title="Edit"
                           >
-                            <Edit2 size={16} />
+                            <Edit2 size={14} />
                           </button>
                           {isAdmin && (
                             <button 
                               onClick={() => { handleDelete(product._id || product.id); }}
-                              className="p-3 bg-white/5 hover:bg-rose-500/10 rounded-xl text-gray-400 hover:text-rose-400 transition-all border border-transparent hover:border-rose-500/20 cursor-pointer"
+                              className="btn-danger btn-sm p-0 w-9 h-9"
+                              title="Delete"
                             >
-                              <Trash2 size={16} />
+                              <Trash2 size={14} />
                             </button>
                           )}
                         </div>
@@ -657,11 +659,11 @@ export default function ProductsPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[9px] text-gray-500 font-black uppercase tracking-tighter">Margin</p>
-                      <p className="font-bold text-emerald-400 mt-0.5">
-                        +{margin.toFixed(1)}%
-                      </p>
-                    </div>
+                       <p className="text-[9px] text-gray-500 font-black uppercase tracking-tighter">Margin</p>
+                       <p className="font-bold text-emerald-400 mt-0.5">
+                         +{margin.toFixed(1)}%
+                       </p>
+                     </div>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
@@ -695,7 +697,7 @@ export default function ProductsPage() {
                           }
                         });
                         setFormAllocations(currentAllocations);
-
+ 
                         // Pre-populate variants
                         if (product.variants && product.variants.length > 0) {
                           const loadedVariants = product.variants.map((v: any) => {
@@ -731,18 +733,18 @@ export default function ProductsPage() {
                         
                         setIsModalOpen(true);
                       }}
-                      className="p-2.5 bg-white/5 hover:bg-cyan-500/10 text-gray-400 hover:text-cyan-400 rounded-xl transition-colors border border-white/5 cursor-pointer flex items-center justify-center min-h-[44px] min-w-[44px]"
+                      className="btn-secondary btn-sm flex items-center justify-center min-h-[36px] min-w-[36px]"
                       title="Edit Product"
                     >
-                      <Edit2 size={16} />
+                      <Edit2 size={14} />
                     </button>
                     {isAdmin && (
                       <button 
                         onClick={() => handleDelete(product._id || product.id)}
-                        className="p-2.5 bg-white/5 hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 rounded-xl transition-colors border border-transparent hover:border-rose-500/20 cursor-pointer flex items-center justify-center min-h-[44px] min-w-[44px]"
+                        className="btn-danger btn-sm flex items-center justify-center min-h-[36px] min-w-[36px]"
                         title="Delete Product"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </button>
                     )}
                   </div>
@@ -768,7 +770,7 @@ export default function ProductsPage() {
           {isModalOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/85 backdrop-blur-md" />
-              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="glass-panel w-full max-w-4xl p-10 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh]">
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="glass-panel w-full max-w-4xl p-10 rounded-2xl relative z-10 border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh]">
                 <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
                   <div>
                     <h2 className="text-3xl font-black text-white tracking-tight uppercase">{editingProduct ? 'Update Product Profile' : 'Register New Product'}</h2>
@@ -800,7 +802,7 @@ export default function ProductsPage() {
                       <div className="space-y-1">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Product Management Type</label>
                         <select
-                          className="w-full glass-input text-xs font-bold cursor-pointer"
+                          className="w-full glass-select text-xs font-bold cursor-pointer"
                           value={formData.type}
                           onChange={(e) => setFormData({
                             ...formData,
@@ -820,7 +822,7 @@ export default function ProductsPage() {
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Link Parent Product *</label>
                             <select
                               required
-                              className="w-full glass-input text-xs font-bold cursor-pointer"
+                              className="w-full glass-select"
                               value={formData.parent_id || ''}
                               onChange={(e) => setFormData({...formData, parent_id: e.target.value})}
                             >
@@ -863,7 +865,7 @@ export default function ProductsPage() {
                             key={v}
                             type="button"
                             onClick={() => addVariant(v)}
-                            className="px-3 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cyan-500/30 rounded-xl text-xs text-white transition-all cursor-pointer"
+                            className="btn-secondary btn-sm"
                           >
                             + {v}
                           </button>
@@ -878,7 +880,7 @@ export default function ProductsPage() {
                         placeholder="Or enter custom variant (e.g. 750ml, Family Pack, Blue...)"
                         value={customVariantName}
                         onChange={(e) => setCustomVariantName(e.target.value)}
-                        className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 flex-1"
+                        className="glass-input flex-1"
                       />
                       <button
                         type="button"
@@ -890,7 +892,7 @@ export default function ProductsPage() {
                             toast.error('Please enter a variant name');
                           }
                         }}
-                        className="px-5 py-3 bg-cyan-500 hover:bg-cyan-600 rounded-2xl text-xs font-black uppercase text-white transition-all cursor-pointer shrink-0 active:scale-95"
+                        className="btn-primary shrink-0"
                       >
                         + Create Custom
                       </button>
@@ -900,7 +902,7 @@ export default function ProductsPage() {
                     {formVariants.length > 0 ? (
                       <div className="space-y-6">
                         {formVariants.map((v, vIdx) => (
-                          <div key={vIdx} className="bg-white/2 p-6 rounded-[2rem] border border-white/5 relative group hover:border-cyan-500/10 transition-all space-y-4">
+                          <div key={vIdx} className="bg-white/2 p-6 rounded-2xl border border-white/5 relative group hover:border-cyan-500/10 transition-all space-y-4">
                             <div className="flex justify-between items-center pb-2 border-b border-white/5">
                               <h4 className="text-sm font-black text-cyan-400 uppercase tracking-wide">Variant: {v.name}</h4>
                               <button
@@ -962,7 +964,7 @@ export default function ProductsPage() {
                               <div className="space-y-1">
                                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Unit Type</label>
                                 <select
-                                  className="w-full glass-input text-xs font-bold cursor-pointer"
+                                  className="w-full glass-select text-xs font-bold cursor-pointer"
                                   value={v.unit}
                                   onChange={(e) => updateVariantField(vIdx, 'unit', e.target.value)}
                                 >
@@ -975,7 +977,7 @@ export default function ProductsPage() {
                                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Supplier Source *</label>
                                 <select
                                   required
-                                  className="w-full glass-input text-xs font-bold cursor-pointer"
+                                  className="w-full glass-select"
                                   value={v.supplierId}
                                   onChange={(e) => updateVariantField(vIdx, 'supplierId', e.target.value)}
                                 >
@@ -995,7 +997,7 @@ export default function ProductsPage() {
                                   <button
                                     type="button"
                                     onClick={() => addVariantAllocation(vIdx)}
-                                    className="px-2.5 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                                    className="btn-secondary btn-sm flex items-center gap-1"
                                   >
                                     <Plus size={10} />
                                     <span>Add Row</span>
@@ -1010,7 +1012,7 @@ export default function ProductsPage() {
                                       <div key={aIdx} className="flex gap-2 items-center">
                                         <select
                                           required
-                                          className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-2 px-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 cursor-pointer font-bold"
+                                          className="flex-1 glass-select"
                                           value={alloc.warehouseId}
                                           onChange={(e) => updateVariantAllocation(vIdx, aIdx, 'warehouseId', e.target.value)}
                                         >
@@ -1024,7 +1026,7 @@ export default function ProductsPage() {
                                           required
                                           min="1"
                                           placeholder="Qty"
-                                          className="w-20 bg-white/5 border border-white/10 rounded-2xl py-2 px-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 font-bold"
+                                          className="w-24 glass-input font-bold"
                                           value={alloc.quantity || ''}
                                           onChange={(e) => updateVariantAllocation(vIdx, aIdx, 'quantity', Number(e.target.value) || 0)}
                                         />
@@ -1101,7 +1103,7 @@ export default function ProductsPage() {
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Supplier Source *</label>
                             <select
                               required={formVariants.length === 0}
-                              className="w-full glass-input text-xs font-bold cursor-pointer"
+                              className="w-full glass-select"
                               value={formData.supplierId}
                               onChange={(e) => setFormData({...formData, supplierId: e.target.value})}
                             >
@@ -1119,7 +1121,7 @@ export default function ProductsPage() {
                           <div className="space-y-1">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Unit of Measure</label>
                             <select 
-                              className="w-full glass-input text-xs font-bold cursor-pointer"
+                              className="w-full glass-select"
                               value={formData.unit}
                               onChange={(e) => setFormData({...formData, unit: e.target.value})}
                             >
@@ -1155,7 +1157,7 @@ export default function ProductsPage() {
                             <button
                               type="button"
                               onClick={() => setFormAllocations([...formAllocations, { warehouseId: '', quantity: 0 }])}
-                              className="px-3.5 py-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                              className="btn-secondary btn-sm flex items-center gap-1"
                             >
                               <Plus size={12} />
                               <span>Add Row</span>
@@ -1170,7 +1172,7 @@ export default function ProductsPage() {
                                 <div key={idx} className="flex gap-3 items-center">
                                   <select
                                     required
-                                    className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 cursor-pointer font-bold"
+                                    className="flex-1 glass-select"
                                     value={alloc.warehouseId}
                                     onChange={(e) => {
                                       const updated = [...formAllocations];
@@ -1188,7 +1190,7 @@ export default function ProductsPage() {
                                     required
                                     min="1"
                                     placeholder="Qty"
-                                    className="w-24 bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 font-bold"
+                                    className="w-24 glass-input font-bold"
                                     value={alloc.quantity || ''}
                                     onChange={(e) => {
                                       const updated = [...formAllocations];
@@ -1289,7 +1291,7 @@ export default function ProductsPage() {
                                 <div className="space-y-1">
                                   <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Payment Method</label>
                                   <select 
-                                    className="w-full glass-input text-xs font-bold cursor-pointer"
+                                    className="w-full glass-select"
                                     value={supplierPaymentInfo.paymentMethod}
                                     onChange={(e) => setSupplierPaymentInfo({ ...supplierPaymentInfo, paymentMethod: e.target.value })}
                                   >
@@ -1375,7 +1377,7 @@ export default function ProductsPage() {
                     <button 
                       type="submit" 
                       disabled={loading || (formVariants.length === 0 ? !allocationsMatch : !isVariantsAllocationValid())} 
-                      className="w-full py-5 bg-gradient-to-r from-cyan-500 to-blue-600 disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 cursor-pointer transition-all active:scale-95 flex items-center justify-center"
+                      className="w-full btn-primary"
                     >
                       {loading ? <Loader2 className="animate-spin" /> : (editingProduct ? 'UPDATE INVENTORY PROFILE' : 'CONFIRM PRODUCT ADDITION')}
                     </button>

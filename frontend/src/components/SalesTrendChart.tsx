@@ -8,7 +8,7 @@ export default function SalesTrendChart({ data = [] }: { data?: any[] }) {
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="glass-panel p-6 rounded-3xl col-span-1 lg:col-span-2 min-h-[400px] border border-white/10"
+      className="glass-panel p-6 rounded-2xl col-span-1 lg:col-span-2 min-h-[400px] border border-white/10"
     >
       <div className="flex items-center justify-between mb-8">
         <div>

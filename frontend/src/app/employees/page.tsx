@@ -372,7 +372,7 @@ export default function EmployeesPage() {
           {hasPermission('createEmployeeAccounts') && (
             <button 
               onClick={openAddForm} 
-              className="px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.02] transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              className="btn-primary"
             >
               <UserPlus size={16} />
               <span>CREATE ACCOUNT</span>
@@ -388,7 +388,7 @@ export default function EmployeesPage() {
             placeholder="Search employees by name, email, role..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-gray-500"
+            className="w-full glass-input pl-12"
           />
         </div>
 
@@ -398,7 +398,7 @@ export default function EmployeesPage() {
             <Loader2 className="animate-spin text-cyan-400 w-12 h-12" />
           </div>
         ) : filteredEmployees.length === 0 ? (
-          <div className="glass-panel p-20 text-center rounded-[3rem] border border-white/5">
+          <div className="glass-panel p-20 text-center rounded-2xl border border-white/5">
             <Users className="w-16 h-16 text-gray-600 mx-auto mb-6" />
             <h3 className="text-xl font-bold text-gray-400">No Employees Found</h3>
             <p className="text-gray-500 text-sm mt-2">Try adjusting your filters or create a new employee.</p>
@@ -415,11 +415,11 @@ export default function EmployeesPage() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="glass-panel p-6 rounded-[2.5rem] border border-white/5 flex flex-col justify-between hover:scale-[1.01] transition-all relative overflow-hidden"
+                  className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-between hover:scale-[1.01] transition-all relative overflow-hidden"
                 >
                   {/* Glowing tag based on status */}
                   <div className="absolute top-6 right-6 flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${emp.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                    <span className={emp.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'}>
                       {emp.status}
                     </span>
                   </div>
@@ -441,7 +441,7 @@ export default function EmployeesPage() {
 
                     {/* Role Pill */}
                     <div className="mb-6">
-                      <span className="px-3 py-1 bg-white/5 border border-white/5 text-[10px] font-black rounded-lg text-cyan-300 uppercase tracking-widest">
+                      <span className="badge-primary">
                         {emp.role?.replace('_', ' ')}
                       </span>
                     </div>
@@ -493,7 +493,7 @@ export default function EmployeesPage() {
                     <button 
                       onClick={() => openEditForm(emp)} 
                       title="Edit Profile & Permissions" 
-                      className="p-2.5 bg-white/5 hover:bg-cyan-500/15 border border-white/10 hover:border-cyan-500/20 text-gray-400 hover:text-cyan-400 rounded-xl transition-all flex-1 flex items-center justify-center cursor-pointer"
+                      className="btn-secondary btn-sm flex-1 hover:text-cyan-400"
                     >
                       <Edit2 size={14} />
                     </button>
@@ -501,21 +501,21 @@ export default function EmployeesPage() {
                       onClick={() => handleToggleStatus(emp)} 
                       title={emp.status === 'ACTIVE' ? 'Deactivate Account' : 'Activate Account'} 
                       disabled={isSelf}
-                      className={`p-2.5 bg-white/5 border border-white/10 rounded-xl transition-all flex-1 flex items-center justify-center cursor-pointer ${isSelf ? 'opacity-40 cursor-not-allowed' : 'hover:bg-amber-500/15 hover:border-amber-500/20 text-gray-400 hover:text-amber-400'}`}
+                      className={`btn-secondary btn-sm flex-1 ${isSelf ? 'opacity-40 cursor-not-allowed' : 'hover:text-amber-400'}`}
                     >
                       {emp.status === 'ACTIVE' ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                     </button>
                     <button 
                       onClick={() => { setResetEmployee(emp); setIsPasswordResetOpen(true); }} 
                       title="Reset Password" 
-                      className="p-2.5 bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/20 text-gray-400 hover:text-emerald-400 rounded-xl transition-all flex-1 flex items-center justify-center cursor-pointer"
+                      className="btn-secondary btn-sm flex-1 hover:text-emerald-400"
                     >
                       <KeyRound size={14} />
                     </button>
                     <button 
                       onClick={() => handleViewHistory(emp)} 
                       title="View Activity Logs" 
-                      className="p-2.5 bg-white/5 hover:bg-blue-500/15 border border-white/10 hover:border-blue-500/20 text-gray-400 hover:text-blue-400 rounded-xl transition-all flex-1 flex items-center justify-center cursor-pointer"
+                      className="btn-secondary btn-sm flex-1 hover:text-blue-400"
                     >
                       <History size={14} />
                     </button>
@@ -523,7 +523,7 @@ export default function EmployeesPage() {
                       onClick={() => handleDeleteEmployee(emp)} 
                       title="Delete Employee" 
                       disabled={isSelf}
-                      className={`p-2.5 bg-white/5 border border-white/10 rounded-xl transition-all flex-1 flex items-center justify-center cursor-pointer ${isSelf ? 'opacity-40 cursor-not-allowed' : 'hover:bg-rose-500/15 hover:border-rose-500/20 text-gray-400 hover:text-rose-500'}`}
+                      className={`btn-danger btn-sm flex-1 ${isSelf ? 'opacity-40 cursor-not-allowed' : ''}`}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -543,7 +543,7 @@ export default function EmployeesPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-                className="glass-panel w-full max-w-4xl p-8 md:p-10 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scroll"
+                className="glass-panel w-full max-w-4xl p-8 md:p-10 rounded-2xl relative z-10 border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scroll"
               >
                 <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
                   <div>
@@ -626,7 +626,7 @@ export default function EmployeesPage() {
                     <div className="space-y-2 md:col-span-2">
                       <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Role Preset</label>
                       <select 
-                        className="w-full glass-input text-sm"
+                        className="w-full glass-select"
                         value={formData.role}
                         onChange={(e) => handleRoleChange(e.target.value)}
                       >
@@ -682,7 +682,7 @@ export default function EmployeesPage() {
                   <button 
                     type="submit" 
                     disabled={loading} 
-                    className="w-full py-5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.01] transition-all cursor-pointer flex items-center justify-center active:scale-95 disabled:opacity-50"
+                    className="btn-primary w-full"
                   >
                     {loading ? <Loader2 className="animate-spin" /> : editingEmployee ? 'SAVE PROFILE CHANGES' : 'CREATE EMPLOYEE PROFILE'}
                   </button>
@@ -701,7 +701,7 @@ export default function EmployeesPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-                className="glass-panel w-full max-w-md p-10 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl"
+                className="glass-panel w-full max-w-md p-10 rounded-2xl relative z-10 border border-white/10 shadow-2xl"
               >
                 <div className="flex justify-between items-center mb-8">
                   <div>
@@ -727,7 +727,7 @@ export default function EmployeesPage() {
                       onChange={(e) => setNewPassword(e.target.value)} 
                     />
                   </div>
-                  <button type="submit" disabled={loading} className="w-full py-5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl text-white font-black text-xs uppercase shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active:scale-95 cursor-pointer">
+                  <button type="submit" disabled={loading} className="btn-primary w-full">
                     {loading ? <Loader2 className="animate-spin mx-auto" /> : 'CONFIRM PASSWORD RESET'}
                   </button>
                 </form>
@@ -745,7 +745,7 @@ export default function EmployeesPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-                className="glass-panel w-full max-w-3xl p-8 md:p-10 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl max-h-[85vh] flex flex-col"
+                className="glass-panel w-full max-w-3xl p-8 md:p-10 rounded-2xl relative z-10 border border-white/10 shadow-2xl max-h-[85vh] flex flex-col"
               >
                 <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
                   <div>
@@ -776,7 +776,7 @@ export default function EmployeesPage() {
                           <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
                             <table className="w-full text-left text-xs border-collapse">
                               <thead>
-                                <tr className="bg-white/5 font-black text-gray-500 uppercase tracking-widest border-b border-white/5">
+                                <tr className="bg-white/5 text-[10px] font-black tracking-wider uppercase text-slate-500 border-b border-white/5">
                                   <th className="p-4">Login Time</th>
                                   <th className="p-4">IP Address</th>
                                   <th className="p-4">Device / User Agent</th>
@@ -815,7 +815,7 @@ export default function EmployeesPage() {
                               <div key={index} className="p-4 bg-white/2 border border-white/5 rounded-2xl flex justify-between items-start gap-4">
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-2">
-                                    <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-black uppercase rounded tracking-wider">
+                                    <span className="badge-warning text-[10px] py-0.5 px-2">
                                       {log.action}
                                     </span>
                                     <span className="text-[10px] text-gray-500">

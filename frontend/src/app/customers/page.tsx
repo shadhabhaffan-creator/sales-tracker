@@ -112,7 +112,7 @@ export default function CustomersPage() {
               </button>
             </div>
             {isAdmin && (
-              <button onClick={() => setIsModalOpen(true)} className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-sm shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all flex items-center gap-2">
+              <button onClick={() => setIsModalOpen(true)} className="btn-primary">
                 <UserPlus size={18} />
                 <span>ADD CUSTOMER</span>
               </button>
@@ -120,7 +120,6 @@ export default function CustomersPage() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-cyan-400 transition-colors" size={20} />
@@ -129,11 +128,11 @@ export default function CustomersPage() {
               placeholder="Search by name, phone, or email..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-gray-500"
+              className="w-full glass-input pl-12"
             />
           </div>
           <div className="flex gap-4">
-            <button className="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-gray-400 flex items-center gap-2 hover:bg-white/10 transition-all">
+            <button className="btn-secondary">
               <Filter size={18} />
               <span>Filters</span>
             </button>
@@ -144,8 +143,8 @@ export default function CustomersPage() {
         {loading ? (
           <div className="h-60 flex items-center justify-center"><Loader2 className="animate-spin text-cyan-400 w-12 h-12" /></div>
         ) : filteredCustomers.length === 0 ? (
-          <div className="glass-panel p-20 text-center rounded-[3rem] border border-white/5">
-            <div className="w-20 h-20 bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-gray-600">
+          <div className="glass-panel p-20 text-center rounded-2xl border border-white/5">
+            <div className="w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6 text-gray-600">
               <Users size={40} />
             </div>
             <h3 className="text-xl font-bold text-gray-400">No Customers Found</h3>
@@ -161,7 +160,7 @@ export default function CustomersPage() {
                   initial={{ opacity: 0, y: 20 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   transition={{ delay: i * 0.05 }}
-                  className="glass-panel p-8 rounded-[2.5rem] group hover:scale-[1.02] transition-all border border-white/5 relative overflow-hidden cursor-pointer"
+                  className="glass-panel p-8 rounded-2xl group hover:scale-[1.02] transition-all border border-white/5 relative overflow-hidden cursor-pointer"
                   onClick={() => setSelectedProfile(customer)}
                 >
                   <div className="absolute top-6 right-6">
@@ -172,8 +171,8 @@ export default function CustomersPage() {
 
                   <div className="flex flex-col items-center text-center">
                     <div className="relative mb-6">
-                      <div className={`absolute inset-0 rounded-[2rem] blur-md opacity-20 group-hover:opacity-60 transition-opacity ${balance > 1000 ? 'bg-rose-500 animate-pulse' : 'bg-cyan-500'}`} />
-                      <div className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-3xl font-black text-white relative z-10 border border-white/10 shadow-2xl">
+                      <div className={`absolute inset-0 rounded-2xl blur-md opacity-20 group-hover:opacity-60 transition-opacity ${balance > 1000 ? 'bg-rose-500 animate-pulse' : 'bg-cyan-500'}`} />
+                      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-3xl font-black text-white relative z-10 border border-white/10 shadow-2xl">
                         {customer.name[0].toUpperCase()}
                       </div>
                       {balance > 0 && (
@@ -200,19 +199,19 @@ export default function CustomersPage() {
                     <div className="w-full mt-6 flex gap-2">
                       <button 
                         onClick={(e) => { e.stopPropagation(); /* WhatsApp logic */ }}
-                        className="flex-1 p-3 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white rounded-xl transition-all border border-emerald-500/10 flex items-center justify-center"
+                        className="btn-secondary btn-sm flex-1 hover:text-emerald-400"
                       >
                         <MessageSquare size={16} />
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); /* Call logic */ }}
-                        className="flex-1 p-3 bg-cyan-500/10 hover:bg-cyan-500 text-cyan-400 hover:text-white rounded-xl transition-all border border-cyan-500/10 flex items-center justify-center"
+                        className="btn-secondary btn-sm flex-1 hover:text-cyan-400"
                       >
                         <Phone size={16} />
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); setSelectedCustomer(customer); setIsSettlementModalOpen(true); }}
-                        className="flex-[2] py-3 bg-white/5 hover:bg-white/10 text-xs font-black uppercase rounded-xl transition-all border border-white/10"
+                        className="btn-primary btn-sm flex-[2]"
                       >
                         SETTLE
                       </button>
@@ -223,10 +222,10 @@ export default function CustomersPage() {
             })}
           </div>
         ) : (
-          <div className="glass-panel rounded-[2.5rem] overflow-hidden border border-white/10">
+          <div className="glass-panel rounded-2xl overflow-hidden border border-white/10">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-white/5 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5">
+                <tr className="bg-white/5 text-[10px] font-black tracking-wider uppercase text-slate-500 border-b border-white/5">
                   <th className="p-6">Customer</th>
                   <th className="p-6">Contact</th>
                   <th className="p-6">Total Spent</th>
@@ -296,7 +295,7 @@ export default function CustomersPage() {
           {isModalOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="glass-panel w-full max-w-lg p-10 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl">
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="glass-panel w-full max-w-lg p-10 rounded-2xl relative z-10 border border-white/10 shadow-2xl">
                 <div className="flex justify-between items-center mb-8">
                   <h2 className="text-3xl font-black text-white tracking-tight">New Customer</h2>
                   <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white"><X size={24} /></button>
@@ -304,23 +303,23 @@ export default function CustomersPage() {
                 <form onSubmit={handleAddCustomer} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Customer Name</label>
-                    <input placeholder="Full Name" required className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                    <input placeholder="Full Name" required className="w-full glass-input" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Phone Number</label>
-                      <input placeholder="+91" className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                      <input placeholder="+91" className="w-full glass-input" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
-                      <input placeholder="Optional" type="email" className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                      <input placeholder="Optional" type="email" className="w-full glass-input" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Address</label>
-                    <textarea placeholder="Street, City, Zip" className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all min-h-[100px] resize-none" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                    <textarea placeholder="Street, City, Zip" className="w-full bg-slate-950/40 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition-all min-h-[100px] resize-none text-white" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
                   </div>
-                  <button type="submit" disabled={loading} className="w-full py-5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl text-white font-black text-sm shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all active:scale-95">
+                  <button type="submit" disabled={loading} className="btn-primary w-full">
                     {loading ? <Loader2 className="animate-spin mx-auto" /> : 'CREATE CUSTOMER PROFILE'}
                   </button>
                 </form>
@@ -334,19 +333,19 @@ export default function CustomersPage() {
           {isSettlementModalOpen && selectedCustomer && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsSettlementModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="glass-panel w-full max-w-md p-10 rounded-[3rem] relative z-10 border border-white/10 shadow-2xl">
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="glass-panel w-full max-w-md p-10 rounded-2xl relative z-10 border border-white/10 shadow-2xl">
                 <div className="flex justify-between items-center mb-8">
                   <h2 className="text-2xl font-black tracking-tight text-white uppercase">Record Payment</h2>
                   <button onClick={() => setIsSettlementModalOpen(false)} className="text-gray-400 hover:text-white"><X size={24} /></button>
                 </div>
-                <div className="p-6 bg-rose-500/10 rounded-[2rem] mb-8 border border-rose-500/20 text-center">
+                <div className="p-6 bg-rose-500/10 rounded-2xl mb-8 border border-rose-500/20 text-center">
                   <p className="text-[10px] text-rose-400 font-black uppercase tracking-[0.2em] mb-1">Outstanding Balance</p>
                   <p className="text-4xl font-black text-rose-400 tracking-tighter">{formatPrice((selectedCustomer.totalSpent || 0) - (selectedCustomer.totalPaid || 0))}</p>
                 </div>
                 <form onSubmit={handleSettlement} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Amount to Pay</label>
-                    <input type="number" step="0.01" required className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-2xl font-black text-center text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" value={settlementData.amount || ''} onChange={(e) => setSettlementData({...settlementData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value)})} />
+                    <input type="number" step="0.01" required className="w-full glass-input text-center text-2xl font-black text-emerald-400" value={settlementData.amount || ''} onChange={(e) => setSettlementData({...settlementData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value)})} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Payment Method</label>
@@ -363,7 +362,7 @@ export default function CustomersPage() {
                       ))}
                     </div>
                   </div>
-                  <button type="submit" disabled={loading} className="w-full py-5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl text-white font-black text-sm shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active:scale-95">
+                  <button type="submit" disabled={loading} className="btn-primary w-full">
                     {loading ? <Loader2 className="animate-spin mx-auto" /> : 'CONFIRM SETTLEMENT'}
                   </button>
                 </form>

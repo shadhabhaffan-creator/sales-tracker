@@ -202,7 +202,7 @@ className="absolute inset-0 bg-black/80"
 />
 
 <motion.div
-className="glass-panel w-full max-w-4xl rounded-[2rem] relative z-10 overflow-hidden"
+className="glass-panel w-full max-w-4xl rounded-2xl relative z-10 overflow-hidden"
 >
 
 <div className="p-8 flex justify-between border-b border-white/5">
@@ -380,7 +380,7 @@ item.totalPrice
 
 <button
 onClick={downloadPDF}
-className="mt-8 glass-button"
+className="mt-8 btn-primary w-full"
 >
 
 <Download/>

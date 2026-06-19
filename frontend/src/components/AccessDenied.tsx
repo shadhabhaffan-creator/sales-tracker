@@ -11,7 +11,7 @@ export default function AccessDenied() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="glass-panel w-full max-w-lg p-10 rounded-[3rem] text-center border border-rose-500/10 shadow-2xl relative overflow-hidden"
+        className="glass-panel w-full max-w-lg p-10 rounded-2xl text-center border border-rose-500/10 shadow-2xl relative overflow-hidden"
       >
         {/* Glow Effects */}
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-rose-500/10 blur-[50px] rounded-full" />
@@ -29,7 +29,7 @@ export default function AccessDenied() {
                 duration: 4,
                 ease: "easeInOut"
               }}
-              className="w-20 h-20 bg-rose-500/10 rounded-[2rem] flex items-center justify-center border border-rose-500/20 text-rose-500 shadow-lg shadow-rose-500/25"
+              className="w-20 h-20 bg-rose-500/10 rounded-2xl flex items-center justify-center border border-rose-500/20 text-rose-500 shadow-lg shadow-rose-500/25"
             >
               <ShieldAlert size={40} />
             </motion.div>
@@ -50,8 +50,8 @@ export default function AccessDenied() {
             You do not have the required permissions to access this page. Please contact your system administrator for authorization.
           </p>
 
-          <Link href="/dashboard" passHref>
-            <button className="px-6 py-4 bg-white/5 hover:bg-white/10 text-xs font-black uppercase text-white rounded-2xl border border-white/10 transition-all flex items-center gap-2 mx-auto cursor-pointer active:scale-95">
+          <Link href="/dashboard" passHref className="inline-block mx-auto">
+            <button className="btn-secondary">
               <ArrowLeft size={16} />
               <span>Back to Dashboard</span>
             </button>

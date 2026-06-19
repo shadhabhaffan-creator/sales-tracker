@@ -45,7 +45,7 @@ export default function QuickActions() {
 
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-16 h-16 rounded-[2rem] flex items-center justify-center text-white shadow-2xl transition-all duration-500 ${isOpen ? 'bg-rose-500 rotate-45' : 'bg-cyan-500 shadow-cyan-500/30'}`}
+        className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-2xl transition-all duration-500 ${isOpen ? 'bg-rose-500 rotate-45' : 'bg-cyan-500 shadow-cyan-500/30'}`}
       >
         <Plus size={32} />
       </button>

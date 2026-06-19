@@ -104,7 +104,7 @@ export default function SettlementModal({ isOpen, onClose, onSuccess, initialCus
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-lg glass-panel rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10"
+            className="relative w-full max-w-lg glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-8">
@@ -149,7 +149,7 @@ export default function SettlementModal({ isOpen, onClose, onSuccess, initialCus
                           placeholder="Search customers..."
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                          className="w-full glass-input pl-12 text-white"
                         />
                         {search && filteredCustomers.length > 0 && (
                           <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-white/10 rounded-2xl overflow-hidden z-10 shadow-2xl">
@@ -199,7 +199,7 @@ export default function SettlementModal({ isOpen, onClose, onSuccess, initialCus
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="0.00"
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-white font-bold text-lg focus:outline-none focus:border-cyan-500/50 transition-colors"
+                      className="w-full glass-input font-bold text-lg text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -242,7 +242,7 @@ export default function SettlementModal({ isOpen, onClose, onSuccess, initialCus
                         placeholder="Enter Transaction ID..."
                         value={transactionId}
                         onChange={(e) => setTransactionId(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-white font-mono text-sm focus:outline-none focus:border-cyan-500/50 transition-colors"
+                        className="w-full glass-input font-mono text-sm text-white"
                       />
                     </motion.div>
                   )}
@@ -254,14 +254,14 @@ export default function SettlementModal({ isOpen, onClose, onSuccess, initialCus
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Add details about this settlement..."
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white text-sm focus:outline-none focus:border-cyan-500/50 transition-colors resize-none h-24"
+                    className="w-full glass-input py-3 text-white text-sm resize-none h-24"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading || !selectedCustomer}
-                  className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl font-bold text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all flex items-center justify-center gap-3 group disabled:opacity-50"
+                  className="w-full btn-primary flex items-center justify-center gap-3 group"
                 >
                   {loading ? (
                     <Loader2 className="animate-spin" size={20} />

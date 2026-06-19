@@ -65,13 +65,13 @@ export default function CustomerProfileModal({ customer, onClose }: { customer: 
         initial={{ scale: 0.9, opacity: 0, y: 20 }} 
         animate={{ scale: 1, opacity: 1, y: 0 }} 
         exit={{ scale: 0.9, opacity: 0, y: 20 }} 
-        className="glass-panel w-full max-w-5xl max-h-[90vh] rounded-[3rem] relative z-10 shadow-2xl border border-white/10 overflow-hidden flex flex-col md:flex-row"
+        className="glass-panel w-full max-w-5xl max-h-[90vh] rounded-2xl relative z-10 shadow-2xl border border-white/10 overflow-hidden flex flex-col md:flex-row"
       >
         {/* Left Side: Profile Info */}
         <div className="w-full md:w-80 bg-white/5 border-r border-white/5 p-8 flex flex-col items-center text-center">
           <div className="relative group">
-            <div className="absolute inset-0 bg-cyan-500 rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
-            <div className="w-32 h-32 rounded-[2.5rem] bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-5xl font-black text-white relative z-10 border-4 border-white/10 shadow-2xl">
+            <div className="absolute inset-0 bg-cyan-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
+            <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-5xl font-black text-white relative z-10 border-4 border-white/10 shadow-2xl">
               {customer.name[0].toUpperCase()}
             </div>
             <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-2xl border-4 border-[#0f172a] flex items-center justify-center z-20">
@@ -219,17 +219,16 @@ export default function CustomerProfileModal({ customer, onClose }: { customer: 
             </div>
           </div>
 
-          {/* CRM Notes */}
           <div className="space-y-4">
             <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest">Customer Remarks</h4>
-            <div className="p-6 bg-white/5 rounded-3xl border border-dashed border-white/10">
+            <div className="p-6 bg-white/5 rounded-2xl border border-dashed border-white/10">
               <textarea 
                 placeholder="Add a private note about this customer..." 
                 className="w-full bg-transparent border-none outline-none text-sm text-gray-300 resize-none min-h-[100px] placeholder:text-gray-600"
                 defaultValue={customer.notes}
               />
               <div className="flex justify-end mt-4">
-                <button className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all">Save Notes</button>
+                <button className="btn-secondary btn-sm">Save Notes</button>
               </div>
             </div>
           </div>

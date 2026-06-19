@@ -51,7 +51,7 @@ export default function ProfileSettingsModal({ isOpen, onClose }: { isOpen: bool
           initial={{ scale: 0.9, opacity: 0, y: 20 }} 
           animate={{ scale: 1, opacity: 1, y: 0 }} 
           exit={{ scale: 0.9, opacity: 0, y: 20 }} 
-          className="glass-panel w-full max-w-lg rounded-[2.5rem] relative z-10 shadow-2xl border border-white/10 overflow-hidden"
+          className="glass-panel w-full max-w-lg rounded-2xl relative z-10 shadow-2xl border border-white/10 overflow-hidden"
         >
           {/* Header */}
           <div className="p-8 flex items-center justify-between border-b border-white/5 bg-white/5">
@@ -78,7 +78,7 @@ export default function ProfileSettingsModal({ isOpen, onClose }: { isOpen: bool
                   type="text" 
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="glass-input w-full pl-12 h-14 font-bold text-white" 
+                  className="glass-input w-full pl-12 font-bold text-white" 
                   placeholder="Username" 
                 />
               </div>
@@ -92,7 +92,7 @@ export default function ProfileSettingsModal({ isOpen, onClose }: { isOpen: bool
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="glass-input w-full pl-12 h-14 font-bold text-white" 
+                  className="glass-input w-full pl-12 font-bold text-white" 
                   placeholder="Leave blank to keep current" 
                 />
               </div>
@@ -107,7 +107,7 @@ export default function ProfileSettingsModal({ isOpen, onClose }: { isOpen: bool
                     type="password" 
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="glass-input w-full pl-12 h-14 font-bold text-white" 
+                    className="glass-input w-full pl-12 font-bold text-white" 
                     placeholder="Confirm your new password" 
                   />
                 </div>
@@ -118,7 +118,7 @@ export default function ProfileSettingsModal({ isOpen, onClose }: { isOpen: bool
               <button 
                 type="submit" 
                 disabled={loading}
-                className="glass-button w-full h-14 text-lg font-black tracking-tight"
+                className="btn-primary w-full flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="animate-spin" /> : (
                   <>

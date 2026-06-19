@@ -29,8 +29,8 @@ class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center p-6 bg-[#0a0c10]">
-          <div className="glass-panel p-10 rounded-[2.5rem] max-w-lg text-center space-y-6">
-            <div className="w-20 h-20 bg-rose-500/20 rounded-3xl flex items-center justify-center mx-auto border border-rose-500/30">
+          <div className="glass-panel p-10 rounded-2xl max-w-lg text-center space-y-6">
+            <div className="w-20 h-20 bg-rose-500/20 rounded-2xl flex items-center justify-center mx-auto border border-rose-500/30">
               <AlertTriangle className="text-rose-500 w-10 h-10" />
             </div>
             <div>
@@ -44,7 +44,7 @@ class ErrorBoundary extends Component<Props, State> {
             )}
             <button 
               onClick={() => window.location.reload()}
-              className="glass-button w-full h-14 flex items-center justify-center gap-3"
+              className="btn-primary w-full flex items-center justify-center gap-3"
             >
               <RotateCcw size={20} />
               <span className="font-bold">Reload Application</span>

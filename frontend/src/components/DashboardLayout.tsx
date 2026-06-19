@@ -33,30 +33,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { user, logout, isAdmin, hasPermission } = useUser();
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-    { icon: ShoppingCart, label: 'Sales', href: '/sales', permission: 'changeSalesStatus' },
-    { icon: Users, label: 'Customers', href: '/customers' },
-    { icon: Banknote, label: 'Settlements', href: '/settlements', permission: 'viewRevenue' },
-    { icon: Package, label: 'Products', href: '/products' },
-    { icon: Boxes, label: 'Bulk Inventory', href: '/inventory' },
-    { icon: ShoppingBag, label: 'Purchases', href: '/purchases' },
-    { icon: Truck, label: 'Suppliers', href: '/suppliers' },
-    { icon: Wallet, label: 'Outstanding Payments', href: '/outstanding-payments' },
-    { icon: Warehouse, label: 'Warehouses', href: '/warehouses' },
-    { icon: Receipt, label: 'Expenses', href: '/expenses' },
-    { icon: BarChart3, label: 'Reports', href: '/reports', permission: 'accessAnalytics' },
-    { icon: ShieldCheck, label: 'Employees', href: '/employees', permission: ['manageTeamMembers', 'createEmployeeAccounts'] },
-    { icon: Settings, label: 'Settings', href: '/settings', permission: 'accessSettings' },
+  const menuGroups = [
+    {
+      title: 'Analytics',
+      items: [
+        { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+        { icon: BarChart3, label: 'Reports', href: '/reports', permission: 'accessAnalytics' },
+      ]
+    },
+    {
+      title: 'Sales & Revenue',
+      items: [
+        { icon: ShoppingCart, label: 'Sales', href: '/sales', permission: 'changeSalesStatus' },
+        { icon: Banknote, label: 'Settlements', href: '/settlements', permission: 'viewRevenue' },
+        { icon: Users, label: 'Customers', href: '/customers' },
+        { icon: Wallet, label: 'Outstanding Payments', href: '/outstanding-payments' },
+      ]
+    },
+    {
+      title: 'Inventory & Logistics',
+      items: [
+        { icon: Package, label: 'Products', href: '/products' },
+        { icon: Boxes, label: 'Bulk Inventory', href: '/inventory' },
+        { icon: ShoppingBag, label: 'Purchases', href: '/purchases' },
+        { icon: Truck, label: 'Suppliers', href: '/suppliers' },
+        { icon: Warehouse, label: 'Warehouses', href: '/warehouses' },
+      ]
+    },
+    {
+      title: 'Administration',
+      items: [
+        { icon: Receipt, label: 'Expenses', href: '/expenses' },
+        { icon: ShieldCheck, label: 'Employees', href: '/employees', permission: ['manageTeamMembers', 'createEmployeeAccounts'] },
+        { icon: Settings, label: 'Settings', href: '/settings', permission: 'accessSettings' },
+      ]
+    }
   ];
 
-  const filteredMenuItems = menuItems.filter(item => {
-    if (!item.permission) return true;
-    if (Array.isArray(item.permission)) {
-      return item.permission.some(p => hasPermission(p));
-    }
-    return hasPermission(item.permission);
-  });
+  const filteredGroups = menuGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      if (!item.permission) return true;
+      if (Array.isArray(item.permission)) {
+        return item.permission.some(p => hasPermission(p));
+      }
+      return hasPermission(item.permission);
+    })
+  })).filter(group => group.items.length > 0);
 
   const renderSidebarContent = (isMobile = false) => (
     <div className="flex flex-col h-full bg-slate-950/80 backdrop-blur-xl">
@@ -72,40 +95,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {!isMobile ? (
           <button 
             onClick={() => setSidebarOpen(!isSidebarOpen)} 
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400"
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 cursor-pointer"
           >
             {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         ) : (
           <button 
             onClick={() => setIsMobileOpen(false)} 
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400"
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 cursor-pointer"
           >
             <X size={20} />
           </button>
         )}
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-hide">
-        {filteredMenuItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
-          return (
-            <Link 
-              key={item.href} 
-              href={item.href} 
-              className="block"
-              onClick={() => isMobile && setIsMobileOpen(false)}
-            >
-              <div className={`
-                flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer group
-                ${isActive ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30' : 'hover:bg-white/5 text-gray-400'}
-              `}>
-                <item.icon size={20} className={isActive ? 'text-white' : 'group-hover:text-white group-hover:scale-110 transition-transform'} />
-                {(isSidebarOpen || isMobile) && <span className="font-medium tracking-wide">{item.label}</span>}
+      <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto scrollbar-hide">
+        {filteredGroups.map((group) => (
+          <div key={group.title} className="space-y-1">
+            {(isSidebarOpen || isMobile) ? (
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500/80 px-4 py-2 mt-2">
+                {group.title}
               </div>
-            </Link>
-          );
-        })}
+            ) : (
+              <div className="h-px bg-white/5 my-2 mx-2" />
+            )}
+            {group.items.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <Link 
+                  key={item.href} 
+                  href={item.href} 
+                  className="block"
+                  onClick={() => isMobile && setIsMobileOpen(false)}
+                >
+                  <div className={`
+                    flex items-center gap-3.5 px-4 py-2.5 rounded-xl transition-all duration-300 cursor-pointer group border
+                    ${isActive 
+                      ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400 font-bold shadow-sm' 
+                      : 'hover:bg-white/5 border-transparent text-gray-400 hover:text-white'}
+                  `}>
+                    <item.icon size={18} className={isActive ? 'text-cyan-400' : 'group-hover:text-white group-hover:scale-110 transition-transform'} />
+                    {(isSidebarOpen || isMobile) && <span className="text-sm font-medium tracking-wide">{item.label}</span>}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div className="p-6 border-t border-white/5">
@@ -128,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Desktop Sidebar (hidden on mobile/tablet) */}
       <aside 
         style={{ width: isSidebarOpen ? 280 : 80 }}
-        className="hidden md:flex glass-panel m-4 mr-0 rounded-3xl flex-col relative z-40 overflow-hidden border border-white/10 transition-all duration-300"
+        className="hidden md:flex glass-panel m-4 mr-0 rounded-2xl flex-col relative z-40 overflow-hidden border border-white/10 transition-all duration-300"
       >
         {renderSidebarContent(false)}
       </aside>

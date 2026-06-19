@@ -60,7 +60,7 @@ function ResetPasswordForm() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-panel w-full max-w-md p-10 rounded-3xl text-center"
+          className="glass-panel w-full max-w-md p-10 rounded-2xl text-center"
         >
           <Loader2 className="animate-spin mx-auto mb-4 text-cyan-400" size={36} />
           <p className="text-gray-400">Verifying reset link…</p>
@@ -81,7 +81,7 @@ function ResetPasswordForm() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-panel w-full max-w-md p-10 rounded-3xl"
+        className="glass-panel w-full max-w-md p-10 rounded-2xl"
       >
         <div className="text-center mb-10">
           <div className="w-16 h-16 bg-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -101,7 +101,7 @@ function ResetPasswordForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
-              className="glass-input w-full h-14 pr-12"
+              className="glass-input w-full pr-12"
             />
             <button
               type="button"
@@ -121,12 +121,12 @@ function ResetPasswordForm() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             autoComplete="new-password"
-            className="glass-input w-full h-14"
+            className="glass-input w-full"
           />
 
           <button
             disabled={loading}
-            className="glass-button w-full h-14 flex items-center justify-center"
+            className="btn-primary w-full flex items-center justify-center"
           >
             {loading ? <Loader2 className="animate-spin" /> : 'Update Password'}
           </button>

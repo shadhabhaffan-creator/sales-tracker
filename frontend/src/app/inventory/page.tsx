@@ -74,7 +74,7 @@ export default function InventoryDashboard() {
           <button 
             onClick={fetchInventoryData}
             disabled={loading}
-            className="self-start md:self-auto px-5 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-xs font-black uppercase tracking-wider rounded-2xl transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+            className="self-start md:self-auto btn-secondary"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             <span>Sync Assets</span>
@@ -85,7 +85,7 @@ export default function InventoryDashboard() {
         {loading && !data ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map(i => (
-              <div key={i} className="glass-panel p-8 rounded-[2rem] border border-white/5 h-32 animate-pulse bg-white/2" />
+              <div key={i} className="glass-panel p-8 rounded-2xl border border-white/5 h-32 animate-pulse bg-white/2" />
             ))}
           </div>
         ) : (
@@ -95,7 +95,7 @@ export default function InventoryDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="glass-panel p-8 rounded-[2rem] border border-white/5 bg-gradient-to-br from-purple-500/10 to-transparent hover:border-purple-500/20 transition-all group"
+              className="glass-panel p-8 rounded-2xl border border-white/5 bg-gradient-to-br from-purple-500/10 to-transparent hover:border-purple-500/20 transition-all group"
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Bulk Volume</span>
@@ -114,7 +114,7 @@ export default function InventoryDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="glass-panel p-8 rounded-[2rem] border border-white/5 bg-gradient-to-br from-cyan-500/10 to-transparent hover:border-cyan-500/20 transition-all group"
+              className="glass-panel p-8 rounded-2xl border border-white/5 bg-gradient-to-br from-cyan-500/10 to-transparent hover:border-cyan-500/20 transition-all group"
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Raw Material Catalogs</span>
@@ -133,7 +133,7 @@ export default function InventoryDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="glass-panel p-8 rounded-[2rem] border border-white/5 bg-gradient-to-br from-emerald-500/10 to-transparent hover:border-emerald-500/20 transition-all group"
+              className="glass-panel p-8 rounded-2xl border border-white/5 bg-gradient-to-br from-emerald-500/10 to-transparent hover:border-emerald-500/20 transition-all group"
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Linked Sellables</span>
@@ -162,7 +162,7 @@ export default function InventoryDashboard() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                 <input 
                   placeholder="Filter materials..." 
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
+                  className="w-full glass-input pl-11 placeholder-gray-500 text-xs"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -189,7 +189,7 @@ export default function InventoryDashboard() {
                     <motion.div 
                       key={parent.id}
                       layout
-                      className="glass-panel rounded-3xl border border-white/5 overflow-hidden hover:border-white/10 transition-colors"
+                      className="glass-panel rounded-2xl border border-white/5 overflow-hidden hover:border-white/10 transition-colors"
                     >
                       {/* Parent Row */}
                       <div 
@@ -296,7 +296,7 @@ export default function InventoryDashboard() {
               <h3 className="text-sm font-black text-white uppercase tracking-wider">Conversion History Ledger</h3>
             </div>
 
-            <div className="glass-panel p-6 rounded-3xl border border-white/5 space-y-4 max-h-[70vh] overflow-y-auto scrollbar-hide">
+            <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4 max-h-[70vh] overflow-y-auto scrollbar-hide">
               {loading ? (
                 <div className="py-20 text-center">
                   <Loader2 className="animate-spin text-cyan-400 mx-auto" />
@@ -312,11 +312,7 @@ export default function InventoryDashboard() {
                     return (
                       <div key={m.id || idx} className="p-4 bg-white/2 border border-white/5 rounded-2xl text-xs space-y-2 hover:bg-white/5 transition-all">
                         <div className="flex justify-between items-center text-[9px] text-gray-500 font-bold">
-                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
-                            m.type === 'INCOMING' 
-                              ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' 
-                              : 'text-rose-400 bg-rose-500/10 border-rose-500/20'
-                          }`}>
+                          <span className={m.type === 'INCOMING' ? 'badge-success' : 'badge-danger'}>
                             {m.type}
                           </span>
                           <span>{format(new Date(m.createdAt), 'MMM dd, hh:mm a')}</span>
@@ -348,7 +344,7 @@ export default function InventoryDashboard() {
             </div>
 
             {/* Help / Explanation Card */}
-            <div className="glass-panel p-6 rounded-3xl border border-cyan-500/10 bg-cyan-500/2 space-y-3">
+            <div className="glass-panel p-6 rounded-2xl border border-cyan-500/10 bg-cyan-500/2 space-y-3">
               <div className="flex items-center gap-2 text-cyan-400 font-black uppercase text-[10px] tracking-wider">
                 <Info size={14} />
                 <span>Conversion Mechanics</span>

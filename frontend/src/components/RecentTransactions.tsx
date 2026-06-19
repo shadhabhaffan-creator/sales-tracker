@@ -9,7 +9,7 @@ export default function RecentTransactions({ transactions }: { transactions: any
   const { formatPrice } = useCurrency();
 
   return (
-    <div className="glass-panel p-6 rounded-3xl border border-white/10">
+    <div className="glass-panel p-6 rounded-2xl border border-white/10">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold">Recent Transactions</h3>
         <button className="text-cyan-400 text-xs font-bold hover:underline uppercase tracking-widest">View All</button>
