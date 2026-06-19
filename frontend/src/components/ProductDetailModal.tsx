@@ -24,6 +24,7 @@ export default function ProductDetailModal({ product, onClose }: { product: any,
           fetchWithAuth('/suppliers').catch(() => []),
           fetchWithAuth('/warehouses').catch(() => [])
         ]);
+        console.log("DEBUG ProductDetailModal history data:", historyData);
         setHistory(historyData);
         setWarehouses(warehousesData);
         if (product.supplierId) {
