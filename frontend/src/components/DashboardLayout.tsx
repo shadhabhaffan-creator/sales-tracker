@@ -104,15 +104,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Glass top reflection line */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent pointer-events-none rounded-t-2xl" />
 
+      {/* Expand floating button — only when collapsed */}
+      {isCollapsed && (
+        <button
+          onClick={() => setIsCollapsed(false)}
+          className="absolute top-[40px] -right-3 w-6 h-6 bg-cyan-500 hover:bg-cyan-400 text-white rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/50 cursor-pointer border border-cyan-400 z-50 transition-all duration-200 active:scale-95"
+          title="Expand sidebar"
+        >
+          <ChevronRight size={14} />
+        </button>
+      )}
+
       {/* Header */}
       <div
-        className="flex items-center justify-between px-3 py-3 shrink-0 rounded-xl mb-4"
+        className={`flex items-center shrink-0 rounded-xl mb-4 relative ${isCollapsed ? 'w-12 h-12 justify-center p-0 mx-auto' : 'w-full px-3 py-3 justify-between'}`}
         style={{
           background: 'rgba(255,255,255,0.03)',
           border: '1px solid rgba(255,255,255,0.05)',
         }}
       >
-        <div className={`flex items-center gap-3 flex-1 min-w-0 ${isCollapsed ? 'justify-center' : ''}`}>
+        <div className={`flex items-center gap-3 min-w-0 ${isCollapsed ? 'justify-center' : 'flex-1'}`}>
           <div className="w-9 h-9 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30 shrink-0">
             <ShieldCheck className="text-white" size={18} />
           </div>
@@ -120,14 +131,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="font-bold text-lg tracking-tight text-white truncate">AuraSales</span>
           )}
         </div>
-        {/* Collapse toggle — always visible inside header */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer shrink-0 ml-1"
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
+        {/* Collapse toggle — only visible inside header when expanded */}
+        {!isCollapsed && (
+          <button
+            onClick={() => setIsCollapsed(true)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer shrink-0 ml-1"
+            title="Collapse sidebar"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -207,9 +220,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         ))}
       </nav>
-
-      {/* Spacer */}
-      <div className="flex-grow" />
 
       {/* Footer — Sign Out */}
       <div
@@ -300,9 +310,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               ))}
             </nav>
-
-            {/* Spacer */}
-            <div className="flex-grow" />
 
             {/* Footer */}
             <div className="pt-4 shrink-0 mt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
