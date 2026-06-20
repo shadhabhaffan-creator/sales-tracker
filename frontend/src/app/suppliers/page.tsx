@@ -460,20 +460,20 @@ export default function SuppliersPage() {
                     <span className="text-[10px] font-bold text-gray-500 italic">View Only</span>
                   )}
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-3">
                     {isAdmin && (
                       <>
                         <button 
                           onClick={(e) => openEditModal(e, supplier)}
-                          className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer"
+                          className="btn-action-edit"
                         >
-                          <Edit2 size={13} />
+                          <Edit2 size={22} />
                         </button>
                         <button 
                           onClick={(e) => handleDeleteSupplier(e, supplier)}
-                          className="p-2 hover:bg-rose-500/10 rounded-lg text-gray-400 hover:text-rose-400 transition-all cursor-pointer"
+                          className="btn-action-delete"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={22} />
                         </button>
                       </>
                     )}
@@ -521,7 +521,7 @@ export default function SuppliersPage() {
                       </td>
                       <td className="p-6 text-gray-400 text-xs">{supplier.paymentTerms || '-'}</td>
                       <td className="p-6 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-3">
                           {isAdmin && (
                             <>
                               <button 
@@ -532,15 +532,15 @@ export default function SuppliersPage() {
                               </button>
                               <button 
                                 onClick={(e) => openEditModal(e, supplier)}
-                                className="btn-secondary btn-sm flex items-center justify-center p-0 w-9"
+                                className="btn-action-edit"
                               >
-                                <Edit2 size={13} />
+                                <Edit2 size={22} />
                               </button>
                               <button 
                                 onClick={(e) => handleDeleteSupplier(e, supplier)}
-                                className="btn-danger btn-sm flex items-center justify-center p-0 w-9"
+                                className="btn-action-delete"
                               >
-                                <Trash2 size={13} />
+                                <Trash2 size={22} />
                               </button>
                             </>
                           )}

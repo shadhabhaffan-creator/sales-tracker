@@ -590,18 +590,18 @@ export default function ProductsPage() {
 
                               setIsModalOpen(true);
                             }}
-                            className="btn-secondary btn-sm p-0 w-9 h-9"
+                            className="btn-action-edit"
                             title="Edit"
                           >
-                            <Edit2 size={14} />
+                            <Edit2 size={22} />
                           </button>
                           {isAdmin && (
                             <button 
                               onClick={() => { handleDelete(product._id || product.id); }}
-                              className="btn-danger btn-sm p-0 w-9 h-9"
+                              className="btn-action-delete"
                               title="Delete"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={22} />
                             </button>
                           )}
                         </div>
@@ -687,10 +687,10 @@ export default function ProductsPage() {
                        <p className="font-bold text-emerald-400 mt-0.5">
                          +{margin.toFixed(1)}%
                        </p>
-                     </div>
+                      </div>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex justify-end gap-3 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
                     <button 
                       onClick={() => {
                         setEditingProduct(product);
@@ -722,7 +722,7 @@ export default function ProductsPage() {
                           }
                         });
                         setFormAllocations(currentAllocations);
- 
+
                         // Pre-populate variants
                         if (product.variants && product.variants.length > 0) {
                           const loadedVariants = product.variants.map((v: any) => {
@@ -758,18 +758,18 @@ export default function ProductsPage() {
                         
                         setIsModalOpen(true);
                       }}
-                      className="btn-secondary btn-sm flex items-center justify-center min-h-[36px] min-w-[36px]"
+                      className="btn-action-edit"
                       title="Edit Product"
                     >
-                      <Edit2 size={14} />
+                      <Edit2 size={22} />
                     </button>
                     {isAdmin && (
                       <button 
                         onClick={() => handleDelete(product._id || product.id)}
-                        className="btn-danger btn-sm flex items-center justify-center min-h-[36px] min-w-[36px]"
+                        className="btn-action-delete"
                         title="Delete Product"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={22} />
                       </button>
                     )}
                   </div>

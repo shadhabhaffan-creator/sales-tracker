@@ -475,27 +475,27 @@ export default function WarehousesPage() {
                       {(wh.products || []).length} Unique Products
                     </span>
 
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                       {isAdmin && (
                         <>
                           <button 
                             onClick={(e) => openCapacityModal(e, wh)}
-                            className="p-2 hover:bg-emerald-500/10 rounded-lg text-gray-400 hover:text-emerald-400 transition-all cursor-pointer"
+                            className="btn-action-success"
                             title="Increase Capacity"
                           >
-                            <TrendingUp size={13} />
+                            <TrendingUp size={22} />
                           </button>
                           <button 
                             onClick={(e) => openEditModal(e, wh)}
-                            className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer"
+                            className="btn-action-edit"
                           >
-                            <Edit2 size={13} />
+                            <Edit2 size={22} />
                           </button>
                           <button 
                             onClick={(e) => handleDeleteWarehouse(e, wh)}
-                            className="p-2 hover:bg-rose-500/10 rounded-lg text-gray-400 hover:text-rose-400 transition-all cursor-pointer"
+                            className="btn-action-delete"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={22} />
                           </button>
                         </>
                       )}
@@ -543,27 +543,27 @@ export default function WarehousesPage() {
                         </span>
                       </td>
                       <td className="p-6 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-3">
                           {isAdmin && (
                             <>
                               <button 
                                 onClick={(e) => openCapacityModal(e, wh)}
-                                className="btn-secondary btn-sm flex items-center justify-center p-0 w-9"
+                                className="btn-action-success"
                                 title="Increase Capacity"
                               >
-                                <TrendingUp size={13} className="text-emerald-400" />
+                                <TrendingUp size={22} />
                               </button>
                               <button 
                                 onClick={(e) => openEditModal(e, wh)}
-                                className="btn-secondary btn-sm flex items-center justify-center p-0 w-9"
+                                className="btn-action-edit"
                               >
-                                <Edit2 size={13} />
+                                <Edit2 size={22} />
                               </button>
                               <button 
                                 onClick={(e) => handleDeleteWarehouse(e, wh)}
-                                className="btn-danger btn-sm flex items-center justify-center p-0 w-9"
+                                className="btn-action-delete"
                               >
-                                <Trash2 size={13} />
+                                <Trash2 size={22} />
                               </button>
                             </>
                           )}
