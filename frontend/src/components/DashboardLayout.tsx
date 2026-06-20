@@ -99,18 +99,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ...sidebarStyle,
         width: isCollapsed ? 80 : 280,
       }}
-      className="hidden lg:flex flex-col h-screen sticky top-0 shrink-0 rounded-2xl m-4 mr-0 z-40 transition-all duration-300 ease-in-out overflow-hidden relative"
+      className="hidden lg:flex flex-col h-[calc(100vh-2rem)] sticky top-4 shrink-0 rounded-2xl m-4 mr-0 z-40 transition-all duration-300 ease-in-out overflow-hidden relative pt-[28px] pb-[28px] px-4"
     >
       {/* Glass top reflection line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent pointer-events-none rounded-t-2xl" />
 
       {/* Header */}
       <div
-        className="flex items-center px-4 py-4 shrink-0"
+        className="flex items-center justify-between px-3 py-3 shrink-0 rounded-xl mb-4"
         style={{
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
           background: 'rgba(255,255,255,0.03)',
-          minHeight: 72,
+          border: '1px solid rgba(255,255,255,0.05)',
         }}
       >
         <div className={`flex items-center gap-3 flex-1 min-w-0 ${isCollapsed ? 'justify-center' : ''}`}>
@@ -133,20 +132,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Navigation */}
       <nav
-        className="flex-1 py-3 overflow-y-auto"
+        className="flex-1 py-1 overflow-y-auto"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
       >
         <style>{`nav::-webkit-scrollbar { display: none; }`}</style>
 
         {filteredGroups.map((group) => (
-          <div key={group.title} className="mb-1">
+          <div key={group.title} className="mb-4">
             {/* Section label */}
             {!isCollapsed ? (
-              <div className="px-5 pt-4 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 select-none">
+              <div className="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 select-none">
                 {group.title}
               </div>
             ) : (
-              <div className="mx-3 my-2 h-px bg-white/8" />
+              <div className="mx-2 my-2 h-px bg-white/8" />
             )}
 
             {group.items.map((item) => {
@@ -154,7 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               const Icon = item.icon;
 
               return (
-                <Link key={item.href} href={item.href} className="block px-2 mb-0.5 group/item">
+                <Link key={item.href} href={item.href} className="block mb-0.5 group/item">
                   <div
                     title={isCollapsed ? item.label : undefined}
                     className={`
@@ -209,9 +208,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ))}
       </nav>
 
+      {/* Spacer */}
+      <div className="flex-grow" />
+
       {/* Footer — Sign Out */}
       <div
-        className="px-2 py-3 shrink-0"
+        className="pt-4 shrink-0 mt-2"
         style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
       >
         <button
@@ -243,7 +245,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 bottom-0 left-0 w-[280px] h-full z-50 lg:hidden flex flex-col"
+            className="fixed top-0 bottom-0 left-0 w-[280px] h-full z-50 lg:hidden flex flex-col pt-[28px] pb-[28px] px-4"
             style={sidebarStyle}
           >
             {/* Glass reflection */}
@@ -251,8 +253,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Header */}
             <div
-              className="flex items-center justify-between px-5 py-4 shrink-0"
-              style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.03)', minHeight: 72 }}
+              className="flex items-center justify-between px-3 py-3 shrink-0 rounded-xl mb-4"
+              style={{ border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.03)' }}
             >
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
@@ -267,20 +269,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Nav */}
             <nav
-              className="flex-1 py-3 overflow-y-auto"
+              className="flex-1 py-1 overflow-y-auto"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
             >
               <style>{`.mobile-nav::-webkit-scrollbar { display: none; }`}</style>
               {filteredGroups.map((group) => (
-                <div key={group.title} className="mb-1">
-                  <div className="px-5 pt-4 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 select-none">
+                <div key={group.title} className="mb-4">
+                  <div className="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 select-none">
                     {group.title}
                   </div>
                   {group.items.map((item) => {
                     const isActive = pathname.startsWith(item.href);
                     const Icon = item.icon;
                     return (
-                      <Link key={item.href} href={item.href} className="block px-2 mb-0.5" onClick={() => setIsMobileOpen(false)}>
+                      <Link key={item.href} href={item.href} className="block mb-0.5" onClick={() => setIsMobileOpen(false)}>
                         <div
                           className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 cursor-pointer ${isActive ? 'text-white' : 'text-gray-400 hover:text-white hover:bg-white/4'}`}
                           style={isActive ? {
@@ -299,8 +301,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               ))}
             </nav>
 
+            {/* Spacer */}
+            <div className="flex-grow" />
+
             {/* Footer */}
-            <div className="px-2 py-3 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="pt-4 shrink-0 mt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
               <button
                 onClick={() => { setIsMobileOpen(false); logout(); }}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
