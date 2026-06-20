@@ -178,6 +178,7 @@ model Product {
   parentProduct       Product?           @relation("ProductConversion", fields: [parent_id], references: [id], onDelete: SetNull)
   childProducts       Product[]          @relation("ProductConversion")
   inventory           Inventory?
+  costCalculationType String             @default("PER_UNIT")
 }
 
 model Variant {

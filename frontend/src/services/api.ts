@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
+import { getInventoryValue, defaultCostCalcType } from '@/lib/inventoryValue';
 import bcrypt from 'bcryptjs';
 
 // Recursive utility to inject `_id` corresponding to `id` for frontend compatibility
@@ -351,7 +352,8 @@ export async function fetchWithAuth(
           supplierId: body.supplierId || null,
           type: body.type || 'STANDARD',
           parent_id: body.parent_id || null,
-          conversion_quantity: body.conversion_quantity || null
+          conversion_quantity: body.conversion_quantity || null,
+          costCalculationType: body.costCalculationType || defaultCostCalcType(body.unit)
         });
 
       if (productErr) throw new Error(productErr.message);
@@ -456,7 +458,8 @@ export async function fetchWithAuth(
           supplierId: body.supplierId || null,
           type: body.type || 'STANDARD',
           parent_id: body.parent_id || null,
-          conversion_quantity: body.conversion_quantity || null
+          conversion_quantity: body.conversion_quantity || null,
+          costCalculationType: body.costCalculationType || defaultCostCalcType(body.unit)
         })
         .eq('id', productId);
 
@@ -1820,10 +1823,11 @@ export async function fetchWithAuth(
         if (p.type === 'CHILD') return; // Skip child products to avoid double counting raw stock
         if (p.variants && p.variants.length > 0) {
           p.variants.forEach((v: any) => {
-            inventoryValue += (v.stock || 0) * (v.costPrice || 0);
+            // Variants: always PER_UNIT (each variant has its own unit costPrice)
+            inventoryValue += getInventoryValue(v.stock, v.costPrice, 'PER_UNIT', v.unit);
           });
         } else {
-          inventoryValue += (p.stock || 0) * (p.costPrice || 0);
+          inventoryValue += getInventoryValue(p.stock, p.costPrice, p.costCalculationType, p.unit);
         }
       });
 

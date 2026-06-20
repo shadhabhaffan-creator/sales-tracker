@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useCurrency } from '@/components/CurrencyContext';
 import { useUser } from '@/components/UserContext';
 import { fetchWithAuth } from '@/services/api';
+import { getInventoryValue, defaultCostCalcType } from '@/lib/inventoryValue';
 
 import ProductDetailModal from '@/components/ProductDetailModal';
 
@@ -58,7 +59,8 @@ export default function ProductsPage() {
     supplierId: '',
     type: 'STANDARD',
     parent_id: '',
-    conversion_quantity: 0
+    conversion_quantity: 0,
+    costCalculationType: 'PER_UNIT' as string
   });
 
   const [supplierPaymentInfo, setSupplierPaymentInfo] = useState({
@@ -271,7 +273,8 @@ export default function ProductsPage() {
         supplierId: '',
         type: 'STANDARD',
         parent_id: '',
-        conversion_quantity: 0
+        conversion_quantity: 0,
+        costCalculationType: 'PER_UNIT'
       });
       setSupplierPaymentInfo({
         enabled: false,
@@ -306,7 +309,13 @@ export default function ProductsPage() {
     }
   };
 
-  const totalInventoryValue = products.reduce((sum, p) => sum + (p.stock * p.costPrice), 0);
+  const totalInventoryValue = products.reduce((sum, p) => {
+    if (p.type === 'CHILD') return sum; // Skip child — stock is derived from parent
+    if (p.variants && p.variants.length > 0) {
+      return sum + p.variants.reduce((vs: number, v: any) => vs + getInventoryValue(v.stock, v.costPrice, 'PER_UNIT', v.unit), 0);
+    }
+    return sum + getInventoryValue(p.stock, p.costPrice, p.costCalculationType, p.unit);
+  }, 0);
   const lowStockCount = products.filter(p => p.stock < (p.lowStockThreshold || 10)).length;
   const outOfStockCount = products.filter(p => p.stock === 0).length;
 
@@ -335,7 +344,8 @@ export default function ProductsPage() {
                   supplierId: '',
                   type: 'STANDARD',
                   parent_id: '',
-                  conversion_quantity: 0
+                  conversion_quantity: 0,
+                  costCalculationType: 'PER_UNIT'
                 }); 
                 setSupplierPaymentInfo({
                   enabled: false,
@@ -528,7 +538,8 @@ export default function ProductsPage() {
                                 supplierId: product.supplierId?._id || product.supplierId || '',
                                 type: product.type || 'STANDARD',
                                 parent_id: product.parent_id?._id || product.parent_id || '',
-                                conversion_quantity: product.conversion_quantity || 0
+                                conversion_quantity: product.conversion_quantity || 0,
+                                costCalculationType: product.costCalculationType || defaultCostCalcType(product.unit || 'UNIT')
                               });
                               
                               // Pre-populate allocations for normal product
@@ -695,7 +706,8 @@ export default function ProductsPage() {
                           supplierId: product.supplierId?._id || product.supplierId || '',
                           type: product.type || 'STANDARD',
                           parent_id: product.parent_id?._id || product.parent_id || '',
-                          conversion_quantity: product.conversion_quantity || 0
+                          conversion_quantity: product.conversion_quantity || 0,
+                          costCalculationType: product.costCalculationType || defaultCostCalcType(product.unit || 'UNIT')
                         });
                         
                         // Pre-populate allocations
@@ -820,7 +832,9 @@ export default function ProductsPage() {
                           onChange={(e) => setFormData({
                             ...formData,
                             type: e.target.value,
-                            ...(e.target.value !== 'CHILD' ? { parent_id: '', conversion_quantity: 0 } : {})
+                            ...(e.target.value !== 'CHILD' ? { parent_id: '', conversion_quantity: 0 } : {}),
+                            // Auto-set costCalculationType default based on current unit when type changes
+                            costCalculationType: defaultCostCalcType(formData.unit)
                           })}
                         >
                           <option value="STANDARD">Standard Product</option>
@@ -1141,7 +1155,15 @@ export default function ProductsPage() {
                             <select 
                               className="w-full glass-select"
                               value={formData.unit}
-                              onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                              onChange={(e) => {
+                                const newUnit = e.target.value;
+                                setFormData({
+                                  ...formData,
+                                  unit: newUnit,
+                                  // Auto-suggest appropriate cost type when unit changes
+                                  costCalculationType: defaultCostCalcType(newUnit)
+                                });
+                              }}
                             >
                               <option value="UNIT">Pieces (Unit)</option>
                               <option value="KG">Kilograms (KG)</option>
@@ -1153,10 +1175,71 @@ export default function ProductsPage() {
                         </div>
                       </div>
 
+                      {/* Cost Calculation Type — critical for correct inventory valuation */}
+                      {formData.type !== 'CHILD' && (
+                        <div className="p-4 bg-amber-500/5 border border-amber-500/15 rounded-2xl space-y-3">
+                          <div>
+                            <h4 className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Inventory Valuation Method</h4>
+                            <p className="text-[10px] text-gray-500 mt-0.5">Choose how the Cost Price is interpreted for inventory valuation</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                              formData.costCalculationType !== 'TOTAL_BATCH'
+                                ? 'border-cyan-500/40 bg-cyan-500/8'
+                                : 'border-white/10 bg-white/3 hover:bg-white/5'
+                            }`}>
+                              <input
+                                type="radio"
+                                className="mt-0.5 accent-cyan-400"
+                                checked={formData.costCalculationType !== 'TOTAL_BATCH'}
+                                onChange={() => setFormData({...formData, costCalculationType: 'PER_UNIT'})}
+                              />
+                              <div>
+                                <p className="text-xs font-black text-white">Per Unit Cost</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">Cost Price × Stock Qty</p>
+                                <p className="text-[10px] text-gray-500">e.g. Bottles, Boxes, Pieces</p>
+                              </div>
+                            </label>
+                            <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                              formData.costCalculationType === 'TOTAL_BATCH'
+                                ? 'border-amber-500/40 bg-amber-500/8'
+                                : 'border-white/10 bg-white/3 hover:bg-white/5'
+                            }`}>
+                              <input
+                                type="radio"
+                                className="mt-0.5 accent-amber-400"
+                                checked={formData.costCalculationType === 'TOTAL_BATCH'}
+                                onChange={() => setFormData({...formData, costCalculationType: 'TOTAL_BATCH'})}
+                              />
+                              <div>
+                                <p className="text-xs font-black text-white">Total Batch Cost</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">Cost Price = Total batch value</p>
+                                <p className="text-[10px] text-gray-500">e.g. 1000L Oil bought for ₹10,000</p>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Cost Price (Purchase)</label>
-                          <input type="number" step="0.01" placeholder="0.00" required={formVariants.length === 0} className="w-full glass-input font-bold" value={formData.costPrice || ''} onChange={(e) => setFormData({...formData, costPrice: e.target.value === '' ? 0 : parseFloat(e.target.value)})} />
+                          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
+                            {formData.costCalculationType === 'TOTAL_BATCH'
+                              ? 'Total Batch Cost (Purchase Price for entire stock)'
+                              : 'Cost Price Per Unit (Purchase)'}
+                          </label>
+                          <input
+                            type="number" step="0.01" placeholder="0.00"
+                            required={formVariants.length === 0}
+                            className="w-full glass-input font-bold"
+                            value={formData.costPrice || ''}
+                            onChange={(e) => setFormData({...formData, costPrice: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
+                          />
+                          {formData.costCalculationType === 'TOTAL_BATCH' && formData.costPrice > 0 && formData.stock > 0 && (
+                            <p className="text-[10px] text-amber-400/80 font-medium ml-1 mt-1">
+                              Effective per unit: ₹{(formData.costPrice / formData.stock).toFixed(2)} / {formData.unit || 'unit'}
+                            </p>
+                          )}
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Selling Price (Retail)</label>
