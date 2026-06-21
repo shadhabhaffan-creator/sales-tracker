@@ -470,13 +470,13 @@ export default function SuppliersPage() {
                           onClick={(e) => openEditModal(e, supplier)}
                           className="btn-action-edit"
                         >
-                          <Edit2 size={22} />
+                          <Edit2 size={18} />
                         </button>
                         <button 
                           onClick={(e) => handleDeleteSupplier(e, supplier)}
                           className="btn-action-delete"
                         >
-                          <Trash2 size={22} />
+                          <Trash2 size={18} />
                         </button>
                       </>
                     )}

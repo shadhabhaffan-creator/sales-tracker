@@ -486,19 +486,19 @@ export default function WarehousesPage() {
                             className="btn-action-success"
                             title="Increase Capacity"
                           >
-                            <TrendingUp size={22} />
+                            <TrendingUp size={18} />
                           </button>
                           <button 
                             onClick={(e) => openEditModal(e, wh)}
                             className="btn-action-edit"
                           >
-                            <Edit2 size={22} />
+                            <Edit2 size={18} />
                           </button>
                           <button 
                             onClick={(e) => handleDeleteWarehouse(e, wh)}
                             className="btn-action-delete"
                           >
-                            <Trash2 size={22} />
+                            <Trash2 size={18} />
                           </button>
                         </>
                       )}
@@ -543,10 +543,10 @@ export default function WarehousesPage() {
                           <>
                             <button 
                               onClick={(e) => openCapacityModal(e, wh)}
-                              className="btn-action-success w-10 h-10 rounded-xl flex items-center justify-center border"
+                              className="btn-action-success"
                               title="Increase Capacity"
                             >
-                              <TrendingUp size={22} />
+                              <TrendingUp size={18} />
                             </button>
                             <ActionButtons 
                               actions={[

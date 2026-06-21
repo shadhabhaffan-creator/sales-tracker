@@ -929,7 +929,7 @@ export default function ProductsPage() {
                       className="btn-action-edit"
                       title="Edit Product"
                     >
-                      <Edit2 size={22} />
+                      <Edit2 size={18} />
                     </button>
                     {isAdmin && (
                       <button 
@@ -937,7 +937,7 @@ export default function ProductsPage() {
                         className="btn-action-delete"
                         title="Delete Product"
                       >
-                        <Trash2 size={22} />
+                        <Trash2 size={18} />
                       </button>
                     )}
                   </div>
