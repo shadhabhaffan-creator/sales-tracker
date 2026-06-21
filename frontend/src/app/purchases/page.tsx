@@ -3,11 +3,10 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, Search, Filter, Loader2, X, Check, Eye, Download, Wallet, CreditCard,
-  DollarSign, FileText, Clipboard, Settings, Calendar, List, ShieldCheck, 
-  ArrowUpRight, ShoppingBag, Trash2, Edit, AlertCircle, RefreshCw
-} from 'lucide-react';
+import { Plus, Search, Filter, Loader2, X, Download, AlertTriangle, AlertCircle, MapPin, Package, History, ShoppingBag, DollarSign, Wallet, CreditCard, ChevronRight, Hash, Building2, User, Eye, Edit2, Trash2 } from 'lucide-react';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, truncateUUID } from '@/components/ui/Table';
+import { StatusBadge, BadgeStatus } from '@/components/ui/StatusBadge';
+import { ActionButtons, ActionType } from '@/components/ui/ActionButtons';
 import { toast } from 'sonner';
 import { useUser } from '@/components/UserContext';
 import { fetchWithAuth } from '@/services/api';
@@ -441,7 +440,8 @@ export default function PurchasesPage() {
         </div>
 
         {/* Table Ledger */}
-        <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
+        {/* Table Ledger */}
+        <div className="w-full">
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3 text-cyan-400">
               <Loader2 className="animate-spin" size={24} />
@@ -452,94 +452,92 @@ export default function PurchasesPage() {
               No purchase logs found.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 text-[9px] font-black text-gray-400 uppercase tracking-widest bg-white/5">
-                    <th className="py-5 px-6">Purchase ID</th>
-                    <th className="py-5 px-4">Invoice No.</th>
-                    <th className="py-5 px-4">Supplier</th>
-                    <th className="py-5 px-4">Product Details</th>
-                    <th className="py-5 px-4 text-right">Qty</th>
-                    <th className="py-5 px-4 text-right">Total Amount</th>
-                    <th className="py-5 px-4 text-right">Paid</th>
-                    <th className="py-5 px-4 text-right">Outstanding</th>
-                    <th className="py-5 px-4">Status</th>
-                    <th className="py-5 px-4">Purchase Date</th>
-                    <th className="py-5 px-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 text-xs">
-                  {filteredPurchases.map((p: any) => {
-                    let statusBadgeClass = 'badge-primary';
-                    if (p.paymentStatus === 'PAID') statusBadgeClass = 'badge-success';
-                    else if (p.paymentStatus === 'DEBT') statusBadgeClass = 'badge-danger';
-                    else if (p.paymentStatus === 'PARTIALLY_PAID') statusBadgeClass = 'badge-warning';
+            <Table>
+              <TableHeader>
+                <TableHead>Purchase ID</TableHead>
+                <TableHead>Invoice No.</TableHead>
+                <TableHead>Supplier</TableHead>
+                <TableHead>Product Details</TableHead>
+                <TableHead className="justify-end text-right">Qty</TableHead>
+                <TableHead className="justify-end text-right">Total Amount</TableHead>
+                <TableHead className="justify-end text-right">Paid</TableHead>
+                <TableHead className="justify-end text-right">Outstanding</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Purchase Date</TableHead>
+                <TableHead className="justify-center text-center">Actions</TableHead>
+              </TableHeader>
+              <TableBody>
+                {filteredPurchases.map((p: any) => {
+                  let badgeStatus: BadgeStatus = 'PAID';
+                  if (p.paymentStatus === 'PAID') badgeStatus = 'PAID';
+                  else if (p.paymentStatus === 'DEBT') badgeStatus = 'OVERDUE';
+                  else if (p.paymentStatus === 'PARTIALLY_PAID') badgeStatus = 'PARTIAL';
 
-                    return (
-                      <tr key={p._id} className="hover:bg-white/5 transition-colors group">
-                        <td className="py-4 px-6 font-bold text-white font-mono">{p.purchaseId}</td>
-                        <td className="py-4 px-4 text-gray-400 font-mono text-[11px]">{p.invoiceNumber}</td>
-                        <td className="py-4 px-4 font-bold text-white">
-                          <span className="block">{p.supplierId?.name || 'Deleted Supplier'}</span>
-                          <span className="block text-[10px] text-gray-500">{p.supplierId?.companyName || ''}</span>
-                        </td>
-                        <td className="py-4 px-4 text-gray-300 font-medium">
-                          <span className="block">{p.productName}</span>
-                          {p.variantName && (
-                            <span className="inline-block px-1.5 py-0.5 bg-white/5 rounded text-[10px] font-black text-gray-400 mt-0.5">
-                              {p.variantName}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-4 px-4 text-right font-semibold text-white">
-                          {p.quantity} <span className="text-[10px] text-gray-500 font-bold">{p.unit}</span>
-                        </td>
-                        <td className="py-4 px-4 text-right text-white font-bold">
-                          ₹{p.totalAmount?.toLocaleString()}
-                        </td>
-                        <td className="py-4 px-4 text-right text-emerald-400 font-medium">
-                          ₹{p.amountPaid?.toLocaleString()}
-                        </td>
-                        <td className="py-4 px-4 text-right text-cyan-400 font-mono font-bold">
-                          ₹{p.remainingBalance?.toLocaleString()}
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className={statusBadgeClass}>
-                            {p.paymentStatus === 'DEBT' ? 'UNPAID / DEBT' : p.paymentStatus?.replace('_', ' ')}
+                  return (
+                    <TableRow key={p._id}>
+                      <TableCell className="font-bold text-white font-mono" title={p.purchaseId}>{truncateUUID(p.purchaseId)}</TableCell>
+                      <TableCell className="text-gray-400 font-mono text-[11px]">{p.invoiceNumber}</TableCell>
+                      <TableCell className="font-bold text-white flex-col items-start gap-0">
+                        <span className="block">{p.supplierId?.name || 'Deleted Supplier'}</span>
+                        <span className="block text-[10px] text-gray-500 font-normal">{p.supplierId?.companyName || ''}</span>
+                      </TableCell>
+                      <TableCell className="text-gray-300 font-medium flex-col items-start gap-0">
+                        <span className="block">{p.productName}</span>
+                        {p.variantName && (
+                          <span className="inline-block px-1.5 py-0.5 bg-white/5 rounded text-[10px] font-black text-gray-400 mt-0.5">
+                            {p.variantName}
                           </span>
-                        </td>
-                        <td className="py-4 px-4 text-gray-400">
-                          {new Date(p.purchaseDate).toLocaleDateString()}
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <div className="flex gap-2 justify-end">
+                        )}
+                      </TableCell>
+                      <TableCell className="justify-end text-right font-semibold text-white">
+                        {p.quantity} <span className="text-[10px] text-gray-500 font-bold">{p.unit}</span>
+                      </TableCell>
+                      <TableCell className="justify-end text-right text-white font-bold">
+                        ₹{p.totalAmount?.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="justify-end text-right text-emerald-400 font-medium">
+                        ₹{p.amountPaid?.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="justify-end text-right text-cyan-400 font-mono font-bold">
+                        ₹{p.remainingBalance?.toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge 
+                          status={badgeStatus} 
+                          label={p.paymentStatus === 'DEBT' ? 'UNPAID / DEBT' : p.paymentStatus?.replace('_', ' ')} 
+                        />
+                      </TableCell>
+                      <TableCell className="text-gray-400">
+                        {new Date(p.purchaseDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="justify-center text-center">
+                        <div className="flex gap-2 justify-center w-full">
+                          <ActionButtons 
+                            actions={[
+                              {
+                                type: 'view',
+                                onClick: () => {
+                                  setDetailPurchase(p);
+                                  setIsDetailModalOpen(true);
+                                }
+                              }
+                            ]}
+                          />
+                          {p.remainingBalance > 0 && isAdmin && (
                             <button 
-                              onClick={() => {
-                                setDetailPurchase(p);
-                                setIsDetailModalOpen(true);
-                              }}
-                              className="btn-secondary btn-sm p-0 w-9 h-9"
-                              title="Invoice Details"
+                              onClick={() => openPayModal(p)}
+                              className="btn-primary btn-sm px-3.5 ml-1"
                             >
-                              <Eye size={13} />
+                              PAY
                             </button>
-                            {p.remainingBalance > 0 && isAdmin && (
-                              <button 
-                                onClick={() => openPayModal(p)}
-                                className="btn-primary btn-sm px-3.5"
-                              >
-                                PAY
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
         </div>
 

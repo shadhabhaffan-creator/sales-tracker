@@ -23,6 +23,9 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, truncateUUID } from '@/components/ui/Table';
+import { StatusBadge, BadgeStatus } from '@/components/ui/StatusBadge';
+import { ActionButtons } from '@/components/ui/ActionButtons';
 import { settlementService } from '@/services/settlementService';
 import { useCurrency } from '@/components/CurrencyContext';
 import { useUser } from '@/components/UserContext';
@@ -211,88 +214,86 @@ export default function SettlementsPage() {
         </div>
 
         {/* History Table */}
-        <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-white/5 bg-white/2 overflow-hidden text-[10px] font-black tracking-wider uppercase text-slate-500">
-                  <th className="p-6">Customer</th>
-                  <th className="p-6 text-center">Status</th>
-                  <th className="p-6">Amount Paid</th>
-                  <th className="p-6">Remaining</th>
-                  <th className="p-6">Method</th>
-                  <th className="p-6">Date & Handler</th>
-                  <th className="p-6 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="p-20 text-center">
-                      <div className="flex flex-col items-center gap-4">
-                        <Loader2 className="animate-spin text-cyan-500 w-12 h-12" />
-                        <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading History...</p>
+        <div className="w-full">
+          <Table>
+            <TableHeader>
+              <TableHead>Customer</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Amount Paid</TableHead>
+              <TableHead>Remaining</TableHead>
+              <TableHead>Method</TableHead>
+              <TableHead>Date & Handler</TableHead>
+              <TableHead className="justify-center text-center">Action</TableHead>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell className="justify-center py-20 w-full">
+                    <div className="flex flex-col items-center gap-4">
+                      <Loader2 className="animate-spin text-cyan-500 w-12 h-12" />
+                      <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading History...</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredSettlements.length === 0 ? (
+                <TableRow>
+                  <TableCell className="justify-center py-20 w-full">
+                    <p className="text-gray-500 font-bold">No settlements found matching your criteria</p>
+                  </TableCell>
+                </TableRow>
+              ) : filteredSettlements.map((s) => {
+                let badgeStatus: BadgeStatus = 'PAID';
+                if (s.status === 'PAID') badgeStatus = 'PAID';
+                else if (s.status === 'PARTIAL') badgeStatus = 'PARTIAL';
+                else if (s.status === 'OVERDUE') badgeStatus = 'OVERDUE';
+                else badgeStatus = 'ACTIVE';
+
+                return (
+                  <TableRow key={s._id}>
+                    <TableCell className="flex gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 flex items-center justify-center border border-white/5 shrink-0">
+                        <User className="text-cyan-400" size={18} />
                       </div>
-                    </td>
-                  </tr>
-                ) : filteredSettlements.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-20 text-center">
-                      <p className="text-gray-500 font-bold">No settlements found matching your criteria</p>
-                    </td>
-                  </tr>
-                ) : filteredSettlements.map((s) => (
-                  <tr key={s._id} className="hover:bg-white/2 transition-colors group">
-                    <td className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 flex items-center justify-center border border-white/5">
-                          <User className="text-cyan-400" size={18} />
-                        </div>
-                        <div>
-                          <p className="font-bold text-white text-base">{s.customerId?.name}</p>
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">ID: #{s._id.slice(-6).toUpperCase()}</p>
-                        </div>
+                      <div className="flex flex-col items-start justify-center gap-0">
+                        <p className="font-bold text-white text-base">{s.customerId?.name}</p>
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-tighter" title={s._id}>ID: #{s._id.slice(-6).toUpperCase()}</p>
                       </div>
-                    </td>
-                    <td className="p-6 text-center">
-                      <span className={getStatusStyle(s.status)}>
-                        {s.status}
-                      </span>
-                    </td>
-                    <td className="p-6">
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={badgeStatus} label={s.status} />
+                    </TableCell>
+                    <TableCell>
                       <p className="text-emerald-400 font-black text-lg">+{formatPrice(s.amountPaid)}</p>
-                    </td>
-                    <td className="p-6">
+                    </TableCell>
+                    <TableCell>
                       <p className="text-white font-bold">{formatPrice(s.remainingBalance)}</p>
-                    </td>
-                    <td className="p-6">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400">
                           {s.paymentMethod === 'CASH' ? <Banknote size={14} /> : s.paymentMethod === 'UPI' ? <FileText size={14} /> : <FileText size={14} />}
                         </div>
                         <span className="text-xs font-bold text-gray-300">{s.paymentMethod}</span>
                       </div>
-                    </td>
-                    <td className="p-6">
-                      <div className="flex items-center gap-3">
-                        <div className="text-left">
-                          <p className="text-sm font-bold text-white">{new Date(s.date).toLocaleDateString()}</p>
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">By {s.handledBy}</p>
-                        </div>
+                    </TableCell>
+                    <TableCell className="flex-col items-start gap-0">
+                      <p className="text-sm font-bold text-white">{new Date(s.date).toLocaleDateString()}</p>
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">By {s.handledBy}</p>
+                    </TableCell>
+                    <TableCell className="justify-center text-center">
+                      <div className="flex justify-center w-full">
+                        <Link href={`/settlements/customer/${s.customerId?._id}`}>
+                          <button className="btn-secondary btn-sm flex items-center justify-center p-0 w-9" title="View Customer Details">
+                            <ChevronRight size={20} />
+                          </button>
+                        </Link>
                       </div>
-                    </td>
-                    <td className="p-6 text-right">
-                      <Link href={`/settlements/customer/${s.customerId?._id}`}>
-                        <button className="btn-secondary btn-sm flex items-center justify-center p-0 w-9">
-                          <ChevronRight size={20} />
-                        </button>
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       </div>
 

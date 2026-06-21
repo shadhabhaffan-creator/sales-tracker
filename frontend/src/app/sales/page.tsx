@@ -3,23 +3,24 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Eye, Loader2, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Download, Plus, Search, Eye, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, truncateUUID } from '@/components/ui/Table';
+import { StatusBadge, BadgeStatus } from '@/components/ui/StatusBadge';
+import { ActionButtons, ActionType } from '@/components/ui/ActionButtons';
 import { useCurrency } from '@/components/CurrencyContext';
 import { useUser } from '@/components/UserContext';
 import { fetchWithAuth } from '@/services/api';
 
 import InvoiceModal from '@/components/InvoiceModal';
 import {
-  Search,
   Calendar as CalendarIcon,
   ChevronLeft,
-  ChevronRight,
-  Download
+  ChevronRight
 } from 'lucide-react';
 
-import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -231,88 +232,80 @@ export default function SalesPage() {
   </div>
 
   {/* Ledger Table (Desktop) */}
-  <div className="hidden md:block glass-panel rounded-2xl border border-white/10 overflow-hidden">
-    <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b border-white/10 text-[9px] font-black text-gray-400 uppercase tracking-widest bg-white/5">
-            <th className="py-5 px-6">Invoice ID</th>
-            <th className="py-5 px-6">Customer</th>
-            <th className="py-5 px-6">Date</th>
-            <th className="py-5 px-6 text-right">Total Amount</th>
-            <th className="py-5 px-6">Payment</th>
-            <th className="py-5 px-6">Status</th>
-            <th className="py-5 px-6 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-white/5 text-xs">
-          {loading ? (
-            <tr>
-              <td colSpan={7} className="py-20 text-center">
-                <div className="flex flex-col items-center justify-center gap-3 text-cyan-400">
-                  <Loader2 className="animate-spin" size={24} />
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Loading sales history...</span>
-                </div>
-              </td>
-            </tr>
-          ) : filteredSales.length > 0 ? (
-            filteredSales.map((sale) => {
-              const invId = sale.invoiceId || `#${String(sale._id || sale.id || '').slice(-6).toUpperCase()}`;
-              const custName = sale.customerId?.name || 'Guest';
-              const saleDate = sale.date ? format(new Date(sale.date), 'MMM dd, yyyy') : '-';
-              const amount = sale.totalAmount || 0;
-              const payment = sale.paymentType || 'CASH';
-              const status = sale.status || 'PAID';
-              
-              let statusBadgeClass = 'badge-success';
-              if (status === 'DUE' || status === 'UNPAID') statusBadgeClass = 'badge-danger';
-              else if (status === 'PARTIAL') statusBadgeClass = 'badge-warning';
+  <div className="hidden md:block">
+    <Table>
+      <TableHeader>
+        <TableHead>Invoice ID</TableHead>
+        <TableHead>Customer</TableHead>
+        <TableHead>Date</TableHead>
+        <TableHead className="justify-end text-right">Total Amount</TableHead>
+        <TableHead>Payment</TableHead>
+        <TableHead>Status</TableHead>
+        <TableHead className="justify-center text-center">Actions</TableHead>
+      </TableHeader>
+      <TableBody>
+        {loading ? (
+          <TableRow>
+            <TableCell className="justify-center py-20 w-full">
+              <div className="flex flex-col items-center justify-center gap-3 text-cyan-400">
+                <Loader2 className="animate-spin" size={24} />
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Loading sales history...</span>
+              </div>
+            </TableCell>
+          </TableRow>
+        ) : filteredSales.length > 0 ? (
+          filteredSales.map((sale) => {
+            const invId = sale.invoiceId || `#${String(sale._id || sale.id || '').slice(-6).toUpperCase()}`;
+            const custName = sale.customerId?.name || 'Guest';
+            const saleDate = sale.date ? format(new Date(sale.date), 'MMM dd, yyyy') : '-';
+            const amount = sale.totalAmount || 0;
+            const payment = sale.paymentType || 'CASH';
+            let status = sale.status || 'PAID';
+            
+            // Map old status to BadgeStatus enum
+            let badgeStatus: BadgeStatus = 'PAID';
+            if (status === 'DUE' || status === 'UNPAID') badgeStatus = 'OVERDUE';
+            else if (status === 'PARTIAL') badgeStatus = 'PARTIAL';
+            else if (status === 'PAID') badgeStatus = 'PAID';
 
-              return (
-                <tr key={sale._id || sale.id} className="hover:bg-white/5 transition-colors group">
-                  <td className="py-4 px-6 font-bold text-white font-mono">{invId}</td>
-                  <td className="py-4 px-6 font-bold text-white">{custName}</td>
-                  <td className="py-4 px-6 text-gray-400 font-medium">{saleDate}</td>
-                  <td className="py-4 px-6 text-right text-white font-bold">{formatPrice(amount)}</td>
-                  <td className="py-4 px-6 font-semibold uppercase tracking-wider">{payment}</td>
-                  <td className="py-4 px-6">
-                    <span className={statusBadgeClass}>
-                      {status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => setSelectedSale(sale)}
-                        className="btn-secondary btn-sm p-0 w-9 h-9"
-                        title="View Invoice"
-                      >
-                        <Eye size={14} />
-                      </button>
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleDelete(sale._id || sale.id)}
-                          className="btn-danger btn-sm p-0 w-9 h-9"
-                          title="Delete Sale"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })
-          ) : (
-            <tr>
-              <td colSpan={7} className="py-20 text-center text-gray-500 italic text-xs font-bold uppercase tracking-widest">
-                No sales records found
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+            return (
+              <TableRow key={sale._id || sale.id}>
+                <TableCell className="font-bold text-white font-mono" title={sale.invoiceId || String(sale._id || sale.id || '')}>{truncateUUID(invId)}</TableCell>
+                <TableCell className="font-bold text-white">{custName}</TableCell>
+                <TableCell className="text-gray-400 font-medium">{saleDate}</TableCell>
+                <TableCell className="justify-end text-right text-white font-bold">{formatPrice(amount)}</TableCell>
+                <TableCell className="font-semibold uppercase tracking-wider">{payment}</TableCell>
+                <TableCell>
+                  <StatusBadge status={badgeStatus} label={status} />
+                </TableCell>
+                <TableCell className="justify-center text-center">
+                  <div className="flex gap-2 justify-center w-full">
+                    <ActionButtons 
+                      actions={[
+                        {
+                          type: 'view',
+                          onClick: () => setSelectedSale(sale)
+                        },
+                        ...(isAdmin ? [{
+                          type: 'delete' as ActionType,
+                          onClick: () => handleDelete(sale._id || sale.id)
+                        }] : [])
+                      ]}
+                    />
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })
+        ) : (
+          <TableRow>
+            <TableCell className="justify-center py-20 w-full text-gray-500 italic text-xs font-bold uppercase tracking-widest">
+              No sales records found
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
   </div>
 
   {/* Ledger Cards (Mobile) */}

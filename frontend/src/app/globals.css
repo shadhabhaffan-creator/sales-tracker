@@ -422,14 +422,14 @@ body.light-mode tbody tr:hover { background-color: rgba(0, 0, 0, 0.03) !importan
   background: rgba(56, 189, 248, 0.4);
 }
 
-/* Premium Action Buttons - 64x64px */
+/* Premium Action Buttons - 44x44px */
 .btn-action-edit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: rgba(56, 189, 248, 0.08);
   color: #38bdf8;
   border: 1px solid rgba(56, 189, 248, 0.2);
@@ -439,23 +439,23 @@ body.light-mode tbody tr:hover { background-color: rgba(0, 0, 0, 0.03) !importan
 }
 
 .btn-action-edit:hover:not(:disabled) {
-  transform: scale(1.03);
+  transform: scale(1.05);
   background: rgba(56, 189, 248, 0.15);
   border-color: rgba(56, 189, 248, 0.4);
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
 }
 
 .btn-action-edit:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 
 .btn-action-delete {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: rgba(239, 68, 68, 0.08);
   color: #f87171;
   border: 1px solid rgba(239, 68, 68, 0.2);
@@ -465,14 +465,14 @@ body.light-mode tbody tr:hover { background-color: rgba(0, 0, 0, 0.03) !importan
 }
 
 .btn-action-delete:hover:not(:disabled) {
-  transform: scale(1.03);
+  transform: scale(1.05);
   background: rgba(239, 68, 68, 0.15);
   border-color: rgba(239, 68, 68, 0.4);
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
 }
 
 .btn-action-delete:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 
 body.light-mode .btn-action-edit {
@@ -491,9 +491,9 @@ body.light-mode .btn-action-delete {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: rgba(16, 185, 129, 0.08);
   color: #10b981;
   border: 1px solid rgba(16, 185, 129, 0.2);
@@ -503,14 +503,14 @@ body.light-mode .btn-action-delete {
 }
 
 .btn-action-success:hover:not(:disabled) {
-  transform: scale(1.03);
+  transform: scale(1.05);
   background: rgba(16, 185, 129, 0.15);
   border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
 }
 
 .btn-action-success:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 
 body.light-mode .btn-action-success {

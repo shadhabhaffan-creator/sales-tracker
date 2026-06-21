@@ -13,6 +13,7 @@ import { useUser } from '@/components/UserContext';
 import { fetchWithAuth } from '@/services/api';
 import AccessDenied from '@/components/AccessDenied';
 import { format } from 'date-fns';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 
 const PERMISSION_LABELS: Record<string, string> = {
   viewAllLeads: 'View All Leads',
@@ -773,31 +774,29 @@ export default function EmployeesPage() {
                         {historyLogs.loginHistory.length === 0 ? (
                           <p className="text-xs text-gray-500 italic">No login records found for this account.</p>
                         ) : (
-                          <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
-                            <table className="w-full text-left text-xs border-collapse">
-                              <thead>
-                                <tr className="bg-white/5 text-[10px] font-black tracking-wider uppercase text-slate-500 border-b border-white/5">
-                                  <th className="p-4">Login Time</th>
-                                  <th className="p-4">IP Address</th>
-                                  <th className="p-4">Device / User Agent</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-white/5">
+                          <div className="w-full">
+                            <Table>
+                              <TableHeader>
+                                <TableHead>Login Time</TableHead>
+                                <TableHead>IP Address</TableHead>
+                                <TableHead>Device / User Agent</TableHead>
+                              </TableHeader>
+                              <TableBody>
                                 {historyLogs.loginHistory.map((lh, index) => (
-                                  <tr key={index} className="hover:bg-white/2">
-                                    <td className="p-4 text-gray-300 font-medium">
+                                  <TableRow key={index}>
+                                    <TableCell className="text-gray-300 font-medium">
                                       {format(new Date(lh.timestamp), 'MMM dd, yyyy - hh:mm a')}
-                                    </td>
-                                    <td className="p-4 text-cyan-400 font-mono font-bold">
+                                    </TableCell>
+                                    <TableCell className="text-cyan-400 font-mono font-bold">
                                       {lh.ip || 'N/A'}
-                                    </td>
-                                    <td className="p-4 text-gray-500 font-medium truncate max-w-xs" title={lh.userAgent}>
-                                      {lh.userAgent || 'Unknown Device'}
-                                    </td>
-                                  </tr>
+                                    </TableCell>
+                                    <TableCell className="text-gray-500 font-medium truncate max-w-xs">
+                                      <span title={lh.userAgent}>{lh.userAgent || 'Unknown Device'}</span>
+                                    </TableCell>
+                                  </TableRow>
                                 ))}
-                              </tbody>
-                            </table>
+                              </TableBody>
+                            </Table>
                           </div>
                         )}
                       </div>

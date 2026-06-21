@@ -194,7 +194,7 @@ export default function InventoryDashboard() {
                       {/* Parent Row */}
                       <div 
                         onClick={() => toggleParent(parent.id)}
-                        className="p-6 flex items-center justify-between cursor-pointer hover:bg-white/2 transition-colors select-none"
+                        className="py-[18px] px-6 flex items-center justify-between cursor-pointer hover:bg-white/2 transition-colors select-none"
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-purple-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400">
@@ -239,7 +239,7 @@ export default function InventoryDashboard() {
                             exit={{ height: 0 }}
                             className="overflow-hidden bg-white/2 border-t border-white/5 divide-y divide-white/5"
                           >
-                            <div className="px-6 py-3 bg-white/5 text-[9px] font-black text-gray-400 uppercase tracking-widest grid grid-cols-12 gap-4">
+                            <div className="px-6 py-5 bg-white/5 text-[9px] font-black text-gray-400 uppercase tracking-widest grid grid-cols-12 gap-4">
                               <div className="col-span-5">Linked Child Product (Package / Retail unit)</div>
                               <div className="col-span-3 text-center">Conversion Formula</div>
                               <div className="col-span-2 text-right">Computed Stock</div>
@@ -252,7 +252,7 @@ export default function InventoryDashboard() {
                               </div>
                             ) : (
                               children.map((child: any) => (
-                                <div key={child.id} className="px-6 py-4 text-xs grid grid-cols-12 gap-4 items-center hover:bg-white/2 transition-colors">
+                                <div key={child.id} className="px-6 py-[18px] text-xs grid grid-cols-12 gap-4 items-center hover:bg-white/2 transition-colors">
                                   <div className="col-span-5 flex items-center gap-3">
                                     <div className="w-8 h-8 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center justify-center text-cyan-400">
                                       <Package size={16} />

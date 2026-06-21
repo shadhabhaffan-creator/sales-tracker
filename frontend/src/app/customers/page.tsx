@@ -3,15 +3,16 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, Wallet, Loader2, X, Clock } from 'lucide-react';
+import { Users, Plus, Wallet, Loader2, X, Clock, Layers, AlertTriangle, Search, LayoutGrid, List, MessageSquare, Phone, ChevronRight, UserPlus, Filter, MoreVertical, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCurrency } from '@/components/CurrencyContext';
 import { useUser } from '@/components/UserContext';
 import { fetchWithAuth } from '@/services/api';
-
-import CustomerProfileModal from '@/components/CustomerProfileModal';
-import { Search, LayoutGrid, List, MessageSquare, Phone, ChevronRight, UserPlus, Filter, MoreVertical, Star } from 'lucide-react';
 import { format } from 'date-fns';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ActionButtons } from '@/components/ui/ActionButtons';
+import CustomerProfileModal from '@/components/CustomerProfileModal';
 
 export default function CustomersPage() {
   const { formatPrice } = useCurrency();
@@ -222,28 +223,25 @@ export default function CustomersPage() {
             })}
           </div>
         ) : (
-          <div className="glass-panel rounded-2xl overflow-hidden border border-white/10">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-white/5 text-[10px] font-black tracking-wider uppercase text-slate-500 border-b border-white/5">
-                  <th className="p-6">Customer</th>
-                  <th className="p-6">Contact</th>
-                  <th className="p-6">Total Spent</th>
-                  <th className="p-6">Current Balance</th>
-                  <th className="p-6">Last Activity</th>
-                  <th className="p-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
+          <div className="w-full">
+            <Table>
+              <TableHeader>
+                <TableHead>Customer</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Total Spent</TableHead>
+                <TableHead>Current Balance</TableHead>
+                <TableHead>Last Activity</TableHead>
+                <TableHead className="justify-center text-center">Actions</TableHead>
+              </TableHeader>
+              <TableBody>
                 {filteredCustomers.map((customer) => {
                   const balance = (customer.totalSpent || 0) - (customer.totalPaid || 0);
                   return (
-                    <tr 
+                    <TableRow 
                       key={customer._id} 
-                      className="hover:bg-white/5 transition-colors cursor-pointer group"
                       onClick={() => setSelectedProfile(customer)}
                     >
-                      <td className="p-6">
+                      <TableCell>
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20">
                             {customer.name[0].toUpperCase()}
@@ -253,33 +251,33 @@ export default function CustomersPage() {
                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Gold Member</p>
                           </div>
                         </div>
-                      </td>
-                      <td className="p-6">
+                      </TableCell>
+                      <TableCell>
                         <p className="text-sm font-medium text-gray-300">{customer.phone || 'N/A'}</p>
                         <p className="text-[10px] text-gray-500">{customer.email || 'No email'}</p>
-                      </td>
-                      <td className="p-6 font-black text-white">{formatPrice(customer.totalSpent || 0)}</td>
-                      <td className="p-6">
+                      </TableCell>
+                      <TableCell className="font-black text-white">{formatPrice(customer.totalSpent || 0)}</TableCell>
+                      <TableCell>
                         <span className={`font-black ${balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
                           {formatPrice(balance)}
                         </span>
-                      </td>
-                      <td className="p-6">
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <Clock size={14} className="text-gray-600" />
                           <span className="text-xs font-medium text-gray-400">{customer.lastPurchaseDate ? format(new Date(customer.lastPurchaseDate), 'MMM dd, yyyy') : 'No records'}</span>
                         </div>
-                      </td>
-                      <td className="p-6">
-                        <div className="flex justify-end gap-2">
-                          <button className="p-3 bg-white/5 hover:bg-cyan-500/10 rounded-xl text-gray-400 hover:text-cyan-400 transition-all border border-transparent hover:border-cyan-500/20"><ChevronRight size={18} /></button>
+                      </TableCell>
+                      <TableCell className="justify-center text-center">
+                        <div className="flex justify-center gap-2 w-full" onClick={(e) => e.stopPropagation()}>
+                          <button className="p-3 bg-white/5 hover:bg-cyan-500/10 rounded-xl text-gray-400 hover:text-cyan-400 transition-all border border-transparent hover:border-cyan-500/20" title="View Customer Details"><ChevronRight size={18} /></button>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
 

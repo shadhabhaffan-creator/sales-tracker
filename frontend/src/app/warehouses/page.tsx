@@ -9,6 +9,9 @@ import {
   MapPin, Clipboard, Settings, Lock, CheckSquare, Clock, BarChart3,
   Calendar, Grid, List, ShieldCheck, Activity, AlertTriangle, Truck, TrendingUp
 } from 'lucide-react';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, truncateUUID } from '@/components/ui/Table';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ActionButtons } from '@/components/ui/ActionButtons';
 import { toast } from 'sonner';
 import { useUser } from '@/components/UserContext';
 import { useCurrency } from '@/components/CurrencyContext';
@@ -507,73 +510,64 @@ export default function WarehousesPage() {
           </div>
         ) : (
           /* Table view */
-          <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                    <th className="p-6">Warehouse</th>
-                    <th className="p-6">ID</th>
-                    <th className="p-6">Location</th>
-                    <th className="p-6">Manager</th>
-                    <th className="p-6">Stock Fill Ratio</th>
-                    <th className="p-6">Status</th>
-                    <th className="p-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredWarehouses.map((wh) => (
-                    <tr 
-                      key={wh._id} 
-                      onClick={() => setSelectedWarehouse(wh)}
-                      className="hover:bg-white/2 transition-all text-sm cursor-pointer group"
-                    >
-                      <td className="p-6 font-bold text-white">{wh.name}</td>
-                      <td className="p-6 text-cyan-400 font-mono text-xs">{wh.warehouseId}</td>
-                      <td className="p-6 text-gray-300">{wh.location || '-'}</td>
-                      <td className="p-6 text-gray-400 font-bold">{wh.managerName || 'Unassigned'}</td>
-                      <td className="p-6">
-                        <span className="text-xs text-gray-300">{wh.currentStock} / {wh.capacity}</span>
-                      </td>
-                      <td className="p-6">
-                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
-                          wh.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                        }`}>
-                          {wh.status}
-                        </span>
-                      </td>
-                      <td className="p-6 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-3">
-                          {isAdmin && (
-                            <>
-                              <button 
-                                onClick={(e) => openCapacityModal(e, wh)}
-                                className="btn-action-success"
-                                title="Increase Capacity"
-                              >
-                                <TrendingUp size={22} />
-                              </button>
-                              <button 
-                                onClick={(e) => openEditModal(e, wh)}
-                                className="btn-action-edit"
-                              >
-                                <Edit2 size={22} />
-                              </button>
-                              <button 
-                                onClick={(e) => handleDeleteWarehouse(e, wh)}
-                                className="btn-action-delete"
-                              >
-                                <Trash2 size={22} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="w-full">
+            <Table>
+              <TableHeader>
+                <TableHead>Warehouse</TableHead>
+                <TableHead>ID</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Manager</TableHead>
+                <TableHead>Stock Fill Ratio</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="justify-center text-center">Actions</TableHead>
+              </TableHeader>
+              <TableBody>
+                {filteredWarehouses.map((wh) => (
+                  <TableRow 
+                    key={wh._id} 
+                    onClick={() => setSelectedWarehouse(wh)}
+                  >
+                    <TableCell className="font-bold text-white">{wh.name}</TableCell>
+                    <TableCell className="text-cyan-400 font-mono text-xs" title={wh.warehouseId}>{truncateUUID(wh.warehouseId)}</TableCell>
+                    <TableCell className="text-gray-300">{wh.location || '-'}</TableCell>
+                    <TableCell className="text-gray-400 font-bold">{wh.managerName || 'Unassigned'}</TableCell>
+                    <TableCell>
+                      <span className="text-xs text-gray-300">{wh.currentStock} / {wh.capacity}</span>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={wh.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE'} />
+                    </TableCell>
+                    <TableCell className="justify-center text-center">
+                      <div className="flex justify-center gap-3 w-full" onClick={(e) => e.stopPropagation()}>
+                        {isAdmin && (
+                          <>
+                            <button 
+                              onClick={(e) => openCapacityModal(e, wh)}
+                              className="btn-action-success w-10 h-10 rounded-xl flex items-center justify-center border"
+                              title="Increase Capacity"
+                            >
+                              <TrendingUp size={22} />
+                            </button>
+                            <ActionButtons 
+                              actions={[
+                                {
+                                  type: 'edit',
+                                  onClick: (e) => openEditModal(e, wh)
+                                },
+                                {
+                                  type: 'delete',
+                                  onClick: (e) => handleDeleteWarehouse(e, wh)
+                                }
+                              ]}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
 

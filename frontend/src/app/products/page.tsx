@@ -11,6 +11,9 @@ import { fetchWithAuth } from '@/services/api';
 import { getInventoryValue, defaultCostCalcType } from '@/lib/inventoryValue';
 
 import ProductDetailModal from '@/components/ProductDetailModal';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ActionButtons } from '@/components/ui/ActionButtons';
 
 const PREDEFINED_VARIANTS = [
   '200ml',
@@ -46,6 +49,7 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState({ 
     name: '', 
@@ -172,7 +176,7 @@ export default function ProductsPage() {
   };
 
   const totalAllocated = formAllocations.reduce((sum, item) => sum + item.quantity, 0);
-  const allocationsMatch = formData.stock === 0 || totalAllocated === formData.stock;
+  const allocationsMatch = formData.type === 'CHILD' || formData.stock === 0 || totalAllocated === formData.stock;
 
   const isVariantsAllocationValid = () => {
     if (formVariants.length === 0) return true;
@@ -185,78 +189,240 @@ export default function ProductsPage() {
     return true;
   };
 
+  const isChildValid = formData.type === 'CHILD' ? {
+    hasParent: !!formData.parent_id,
+    hasConsumption: formData.conversion_quantity > 0,
+    hasSupplier: !!formData.supplierId,
+    hasStock: formData.stock >= 0,
+    hasCostPrice: formData.costPrice !== undefined && formData.costPrice !== null && formData.costPrice.toString() !== '',
+    hasSellingPrice: formData.sellingPrice !== undefined && formData.sellingPrice !== null && formData.sellingPrice.toString() !== '',
+    hasSku: !!formData.sku
+  } : null;
+
+  const isChildFormReady = isChildValid ? Object.values(isChildValid).every(Boolean) : false;
+  const disabledCondition = loading;
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // 1. General Fields
+    if (!formData.name || formData.name.trim() === '') {
+      newErrors['name'] = 'Product Name is required';
+    }
+
+    // 2. Child product validation
+    if (formData.type === 'CHILD') {
+      if (!formData.parent_id) {
+        newErrors['parent_id'] = 'Parent Product is required';
+      }
+      if (formData.conversion_quantity <= 0) {
+        newErrors['conversion_quantity'] = 'Consumption Quantity must be greater than zero';
+      }
+      if (!formData.supplierId) {
+        newErrors['supplierId'] = 'Supplier Source is required';
+      }
+      if (formData.costPrice === undefined || formData.costPrice === null || formData.costPrice.toString().trim() === '') {
+        newErrors['costPrice'] = 'Cost Price is required';
+      } else if (Number(formData.costPrice) < 0) {
+        newErrors['costPrice'] = 'Cost Price cannot be negative';
+      }
+      if (formData.sellingPrice === undefined || formData.sellingPrice === null || formData.sellingPrice.toString().trim() === '') {
+        newErrors['sellingPrice'] = 'Selling Price is required';
+      } else if (Number(formData.sellingPrice) < 0) {
+        newErrors['sellingPrice'] = 'Selling Price cannot be negative';
+      }
+      if (!formData.sku || formData.sku.trim() === '') {
+        newErrors['sku'] = 'SKU is required for child products';
+      }
+    } else {
+      // 3. Parent or Standard Product validation
+      if (formVariants.length > 0) {
+        // Variant Validation
+        formVariants.forEach((v, vIdx) => {
+          if (!v.name || v.name.trim() === '') {
+            newErrors[`variant-${vIdx}-name`] = `Variant #${vIdx + 1} name is required`;
+          }
+          if (v.costPrice === undefined || v.costPrice === null || v.costPrice.toString().trim() === '') {
+            newErrors[`variant-${vIdx}-costPrice`] = `Cost Price is required for variant "${v.name || vIdx + 1}"`;
+          } else if (Number(v.costPrice) < 0) {
+            newErrors[`variant-${vIdx}-costPrice`] = `Cost Price cannot be negative for variant "${v.name || vIdx + 1}"`;
+          }
+          if (v.sellingPrice === undefined || v.sellingPrice === null || v.sellingPrice.toString().trim() === '') {
+            newErrors[`variant-${vIdx}-sellingPrice`] = `Selling Price is required for variant "${v.name || vIdx + 1}"`;
+          } else if (Number(v.sellingPrice) < 0) {
+            newErrors[`variant-${vIdx}-sellingPrice`] = `Selling Price cannot be negative for variant "${v.name || vIdx + 1}"`;
+          }
+          if (v.stock === undefined || v.stock === null || v.stock.toString().trim() === '') {
+            newErrors[`variant-${vIdx}-stock`] = `Received Stock Qty is required for variant "${v.name || vIdx + 1}"`;
+          } else if (Number(v.stock) < 0) {
+            newErrors[`variant-${vIdx}-stock`] = `Stock cannot be negative for variant "${v.name || vIdx + 1}"`;
+          }
+          if (!v.supplierId) {
+            newErrors[`variant-${vIdx}-supplierId`] = `Supplier Source is required for variant "${v.name || vIdx + 1}"`;
+          }
+          // Warehouse allocations for variant if stock > 0
+          if (Number(v.stock) > 0) {
+            if (!v.allocations || v.allocations.length === 0) {
+              newErrors[`variant-${vIdx}-allocations`] = `Please add at least one warehouse row to allocate variant "${v.name || vIdx + 1}" stock`;
+            } else {
+              const vAllocTotal = v.allocations.reduce((sum: number, a: any) => sum + (Number(a.quantity) || 0), 0);
+              if (vAllocTotal !== Number(v.stock)) {
+                newErrors[`variant-${vIdx}-allocations`] = `Allocated stock (${vAllocTotal}) does not match received quantity (${v.stock}) for variant "${v.name || vIdx + 1}"`;
+              }
+              v.allocations.forEach((alloc: any, aIdx: number) => {
+                if (!alloc.warehouseId) {
+                  newErrors[`variant-${vIdx}-allocation-${aIdx}-warehouse`] = `Select Warehouse for variant "${v.name || vIdx + 1}" allocation #${aIdx + 1}`;
+                }
+                if (!alloc.quantity || Number(alloc.quantity) <= 0) {
+                  newErrors[`variant-${vIdx}-allocation-${aIdx}-quantity`] = `Quantity must be greater than zero for variant "${v.name || vIdx + 1}" allocation #${aIdx + 1}`;
+                }
+              });
+            }
+          }
+        });
+      } else {
+        // Standard Product Validation (no variants)
+        if (formData.stock === undefined || formData.stock === null || formData.stock.toString().trim() === '') {
+          newErrors['stock'] = 'Received Stock Level is required';
+        } else if (Number(formData.stock) < 0) {
+          newErrors['stock'] = 'Stock level cannot be negative';
+        }
+        if (!formData.supplierId) {
+          newErrors['supplierId'] = 'Supplier Source is required';
+        }
+        if (!formData.unit) {
+          newErrors['unit'] = 'Unit of Measure is required';
+        }
+        if (formData.costPrice === undefined || formData.costPrice === null || formData.costPrice.toString().trim() === '') {
+          newErrors['costPrice'] = 'Cost Price is required';
+        } else if (Number(formData.costPrice) < 0) {
+          newErrors['costPrice'] = 'Cost Price cannot be negative';
+        }
+        if (formData.sellingPrice === undefined || formData.sellingPrice === null || formData.sellingPrice.toString().trim() === '') {
+          newErrors['sellingPrice'] = 'Selling Price is required';
+        } else if (Number(formData.sellingPrice) < 0) {
+          newErrors['sellingPrice'] = 'Selling Price cannot be negative';
+        }
+        // Warehouse allocations for standard if stock > 0
+        if (Number(formData.stock) > 0) {
+          if (!formAllocations || formAllocations.length === 0) {
+            newErrors['allocations'] = 'Please add at least one warehouse row to allocate the stock';
+          } else {
+            const totalAllocated = formAllocations.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+            if (totalAllocated !== Number(formData.stock)) {
+              newErrors['allocations'] = `Allocated stock (${totalAllocated}) does not match received quantity (${formData.stock})`;
+            }
+            formAllocations.forEach((alloc, aIdx) => {
+              if (!alloc.warehouseId) {
+                newErrors[`allocation-${aIdx}-warehouse`] = `Select Warehouse for allocation #${aIdx + 1}`;
+              }
+              if (!alloc.quantity || Number(alloc.quantity) <= 0) {
+                newErrors[`allocation-${aIdx}-quantity`] = `Quantity must be greater than zero for allocation #${aIdx + 1}`;
+              }
+            });
+          }
+        }
+      }
+    }
+
+    // 4. Supplier Payment tracking validation
+    if (supplierPaymentInfo.enabled && !editingProduct) {
+      if (Number(supplierPaymentInfo.purchaseAmount) <= 0) {
+        newErrors['supplierPayment-purchaseAmount'] = 'Purchase amount must be greater than zero when payment tracking is enabled';
+      }
+      if (Number(supplierPaymentInfo.amountPaid) < 0) {
+        newErrors['supplierPayment-amountPaid'] = 'Amount paid cannot be negative';
+      }
+      if (Number(supplierPaymentInfo.amountPaid) > Number(supplierPaymentInfo.purchaseAmount)) {
+        newErrors['supplierPayment-amountPaid'] = 'Amount paid cannot exceed total purchase amount';
+      }
+      if (!formData.supplierId) {
+        newErrors['supplierId'] = 'Please select a Supplier Source to track supplier payment';
+      }
+    }
+
+    return newErrors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) return;
 
-    if (supplierPaymentInfo.enabled && !editingProduct) {
-      if (Number(supplierPaymentInfo.purchaseAmount) <= 0) {
-        toast.error('Purchase amount must be greater than zero when payment tracking is enabled');
-        return;
-      }
-      if (Number(supplierPaymentInfo.amountPaid) > Number(supplierPaymentInfo.purchaseAmount)) {
-        toast.error('Amount paid cannot exceed total purchase amount');
-        return;
-      }
-      if (!formData.supplierId) {
-        toast.error('Please select a Supplier Source to track supplier payment');
-        return;
-      }
-    }
+    // 1. Log form values before submit
+    console.log("[FORM SUBMIT] Form values before validation:", {
+      formData,
+      formVariants,
+      formAllocations,
+      supplierPaymentInfo
+    });
 
-    if (formVariants.length > 0) {
-      for (const v of formVariants) {
-        if (!v.supplierId) {
-          toast.error(`Please select a Supplier Source for variant "${v.name}"`);
-          return;
-        }
-        if (v.stock > 0) {
-          const vAllocTotal = (v.allocations || []).reduce((sum: number, a: any) => sum + (Number(a.quantity) || 0), 0);
-          if (vAllocTotal !== v.stock) {
-            toast.error(`Allocated stock does not match received quantity for variant "${v.name}"`);
-            return;
+    // 2. Perform validation audit
+    const validationErrors = validateForm();
+    
+    // Log validation results
+    console.log("[FORM SUBMIT] Validation results:", {
+      isValid: Object.keys(validationErrors).length === 0,
+      errors: validationErrors
+    });
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      
+      const firstErrorKey = Object.keys(validationErrors)[0];
+      const errorMessage = validationErrors[firstErrorKey];
+      
+      // Display a toast explaining why submission failed
+      toast.error(`Submission failed: ${errorMessage}`);
+
+      // Automatically scroll to the first invalid field
+      setTimeout(() => {
+        const errorElement = document.getElementById(`field-${firstErrorKey}`);
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (errorElement.tagName === 'INPUT' || errorElement.tagName === 'SELECT') {
+            errorElement.focus();
           }
         }
-      }
-    } else {
-      if (formData.type !== 'CHILD' && formData.stock > 0) {
-        if (formAllocations.some(a => !a.warehouseId)) {
-          toast.error('Please select a warehouse for all allocation entries');
-          return;
-        }
-        if (totalAllocated !== formData.stock) {
-          toast.error('Allocated stock does not match received quantity');
-          return;
-        }
-      }
+      }, 50);
+      return;
     }
 
+    // Clear validation errors if valid
+    setErrors({});
+
     setLoading(true);
+    
+    const payload = editingProduct 
+      ? { ...formData, id: editingProduct._id, allocations: formAllocations, variants: formVariants }
+      : { 
+          ...formData, 
+          allocations: formAllocations, 
+          variants: formVariants,
+          supplierPaymentInfo: supplierPaymentInfo.enabled ? {
+            supplierId: formData.supplierId,
+            purchaseAmount: supplierPaymentInfo.purchaseAmount,
+            amountPaid: supplierPaymentInfo.amountPaid,
+            paymentDate: supplierPaymentInfo.paymentDate,
+            dueDate: supplierPaymentInfo.dueDate,
+            transactionId: supplierPaymentInfo.transactionId,
+            paymentMethod: supplierPaymentInfo.paymentMethod,
+            notes: supplierPaymentInfo.notes,
+            receiptImage: supplierPaymentInfo.receiptImage
+          } : undefined
+        };
+
+    // 3. Log API request payload
+    console.log("[FORM SUBMIT] API request payload:", payload);
+
     try {
       const method = editingProduct ? 'PUT' : 'POST';
-      const payload = editingProduct 
-        ? { ...formData, id: editingProduct._id, allocations: formAllocations, variants: formVariants }
-        : { 
-            ...formData, 
-            allocations: formAllocations, 
-            variants: formVariants,
-            supplierPaymentInfo: supplierPaymentInfo.enabled ? {
-              supplierId: formData.supplierId,
-              purchaseAmount: supplierPaymentInfo.purchaseAmount,
-              amountPaid: supplierPaymentInfo.amountPaid,
-              paymentDate: supplierPaymentInfo.paymentDate,
-              dueDate: supplierPaymentInfo.dueDate,
-              transactionId: supplierPaymentInfo.transactionId,
-              paymentMethod: supplierPaymentInfo.paymentMethod,
-              notes: supplierPaymentInfo.notes,
-              receiptImage: supplierPaymentInfo.receiptImage
-            } : undefined
-          };
-      
-      await fetchWithAuth('/products', { 
+      const response = await fetchWithAuth('/products', { 
         method, 
         body: JSON.stringify(payload) 
       });
+      
+      // 4. Log API response
+      console.log("[FORM SUBMIT] API response success:", response);
       
       toast.success(editingProduct ? 'Product inventory updated' : 'Product successfully added');
       setIsModalOpen(false);
@@ -291,7 +457,10 @@ export default function ProductsPage() {
       setFormVariants([]);
       fetchProducts();
     } catch (error: any) { 
-      toast.error(error.message); 
+      // 5. Log any caught exceptions
+      console.error("[FORM SUBMIT] Submission failed with exception:", error);
+      // Display the exact error message returned by backend
+      toast.error(error.message || 'An unexpected error occurred during submission'); 
     } finally { 
       setLoading(false); 
     }
@@ -360,6 +529,7 @@ export default function ProductsPage() {
                 });
                 setFormAllocations([]);
                 setFormVariants([]);
+                setErrors({});
                 setIsModalOpen(true); 
               }} 
               className="btn-primary flex items-center gap-2"
@@ -422,109 +592,104 @@ export default function ProductsPage() {
         </div>
 
         {/* Products Table (Desktop) */}
-        <div className="hidden md:block glass-panel rounded-2xl overflow-hidden border border-white/10">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                  <th className="p-6">Product Information</th>
-                  <th className="p-6 text-center">Stock</th>
-                  <th className="p-6">Unit Costs</th>
-                  <th className="p-6">Profit Margin</th>
-                  <th className="p-6">Status</th>
-                  <th className="p-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {loading ? (
-                  <tr><td colSpan={6} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-cyan-400 w-10 h-10" /></td></tr>
-                ) : filteredProducts.length > 0 ? filteredProducts.map((product) => {
-                  const profit = product.sellingPrice - product.costPrice;
-                  const margin = product.sellingPrice > 0 ? (profit / product.sellingPrice) * 100 : 0;
-                  const isLow = product.stock < (product.lowStockThreshold || 10);
-                  const isOut = product.stock === 0;
+        <div className="hidden md:block">
+          <Table gridTemplate="35% 12% 15% 15% 10% 13%">
+            <TableHeader>
+              <TableHead>Product Information</TableHead>
+              <TableHead className="justify-center text-center">Stock</TableHead>
+              <TableHead>Unit Costs</TableHead>
+              <TableHead>Profit Margin</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="justify-center text-center">Actions</TableHead>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow><TableCell className="justify-center py-20 w-full"><Loader2 className="animate-spin text-cyan-400 w-10 h-10" /></TableCell></TableRow>
+              ) : filteredProducts.length > 0 ? filteredProducts.map((product) => {
+                const profit = product.sellingPrice - product.costPrice;
+                const margin = product.sellingPrice > 0 ? (profit / product.sellingPrice) * 100 : 0;
+                const isLow = product.stock < (product.lowStockThreshold || 10);
+                const isOut = product.stock === 0;
 
-                  return (
-                    <tr 
-                      key={product._id || product.id} 
-                      className="hover:bg-white/5 transition-colors text-sm group cursor-pointer"
-                      onClick={() => setSelectedProduct(product)}
-                    >
-                      <td className="p-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/5 overflow-hidden">
-                            {product.image ? (
-                              <img src={product.image} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <Package className="text-gray-600 group-hover:text-cyan-400 transition-colors" size={24} />
+                return (
+                  <TableRow 
+                    key={product._id || product.id} 
+                    onClick={() => setSelectedProduct(product)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/5 overflow-hidden">
+                          {product.image ? (
+                            <img src={product.image} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Package className="text-gray-600 group-hover:text-cyan-400 transition-colors" size={24} />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-bold text-white group-hover:text-cyan-400 transition-colors flex items-center gap-2">
+                            {product.name}
+                            {product.type === 'PARENT' && (
+                              <span className="text-[8px] font-black tracking-wider uppercase bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1.5 py-0.5 rounded">
+                                Raw
+                              </span>
                             )}
-                          </div>
-                          <div>
-                            <p className="font-bold text-white group-hover:text-cyan-400 transition-colors flex items-center gap-2">
-                              {product.name}
-                              {product.type === 'PARENT' && (
-                                <span className="text-[8px] font-black tracking-wider uppercase bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1.5 py-0.5 rounded">
-                                  Raw
-                                </span>
-                              )}
-                              {product.type === 'CHILD' && (
-                                <span className="text-[8px] font-black tracking-wider uppercase bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-1.5 py-0.5 rounded">
-                                  Child
-                                </span>
-                              )}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{product.sku || 'NO-SKU'}</span>
-                              {product.variants && product.variants.length > 0 ? (
-                                <span className="text-[10px] text-indigo-400 font-bold">
-                                  • {product.variants.length} packaging options
-                                </span>
-                              ) : product.type === 'CHILD' && product.parent_id ? (
-                                <span className="text-[10px] text-gray-400 font-bold">
-                                  • Parent: {products.find(p => p._id === product.parent_id || p.id === product.parent_id)?.name || 'Bulk Link'}
-                                </span>
-                              ) : product.supplierId ? (
-                                <span className="text-[10px] text-cyan-400 font-bold">
-                                  • Supplied by: {product.supplierId.name || product.supplierId}
-                                </span>
-                              ) : null}
-                            </div>
+                            {product.type === 'CHILD' && (
+                              <span className="text-[8px] font-black tracking-wider uppercase bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-1.5 py-0.5 rounded">
+                                Child
+                              </span>
+                            )}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{product.sku || 'NO-SKU'}</span>
+                            {product.variants && product.variants.length > 0 ? (
+                              <span className="text-[10px] text-indigo-400 font-bold">
+                                • {product.variants.length} packaging options
+                              </span>
+                            ) : product.type === 'CHILD' && product.parent_id ? (
+                              <span className="text-[10px] text-gray-400 font-bold">
+                                • Parent: {products.find(p => p._id === product.parent_id || p.id === product.parent_id)?.name || 'Bulk Link'}
+                              </span>
+                            ) : product.supplierId ? (
+                              <span className="text-[10px] text-cyan-400 font-bold">
+                                • Supplied by: {product.supplierId.name || product.supplierId}
+                              </span>
+                            ) : null}
                           </div>
                         </div>
-                      </td>
-                      <td className="p-6 text-center">
+                      </div>
+                    </TableCell>
+                    <TableCell className="justify-center">
+                      <div className="text-center">
                         <p className={`text-lg font-black ${isOut ? 'text-rose-500' : isLow ? 'text-amber-500' : 'text-emerald-500'}`}>
                           {product.stock}
                         </p>
                         <p className="text-[10px] text-gray-600 uppercase font-black tracking-widest">{product.type === 'CHILD' ? 'Units' : (product.type === 'PARENT' && (product.unit === 'LITER' || product.unit === 'UNIT') ? 'L' : (product.unit === 'LITER' ? 'L' : (product.unit === 'UNIT' ? 'Units' : (product.unit || 'L'))))}</p>
-                      </td>
-                      <td className="p-6">
-                        <div className="space-y-1">
-                          <p className="text-xs text-gray-500 font-medium">Cost: {formatPrice(product.costPrice)}</p>
-                          <p className="font-black text-white">Price: {formatPrice(product.sellingPrice)}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 font-medium">Cost: {formatPrice(product.costPrice)}</p>
+                        <p className="font-black text-white">Price: {formatPrice(product.sellingPrice)}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded border border-emerald-500/20">
+                          +{margin.toFixed(1)}%
                         </div>
-                      </td>
-                      <td className="p-6">
-                        <div className="flex items-center gap-2">
-                          <div className="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded border border-emerald-500/20">
-                            +{margin.toFixed(1)}%
-                          </div>
-                          <p className="text-xs font-bold text-emerald-500">+{formatPrice(profit)}</p>
-                        </div>
-                      </td>
-                      <td className="p-6">
-                        <span className={
-                          isOut ? 'badge-danger' :
-                          isLow ? 'badge-warning' :
-                          'badge-success'
-                        }>
-                          {isOut ? 'OUT OF STOCK' : isLow ? 'LOW STOCK' : 'IN STOCK'}
-                        </span>
-                      </td>
-                      <td className="p-6">
-                        <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button 
-                            onClick={() => {
+                        <p className="text-xs font-bold text-emerald-500">+{formatPrice(profit)}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={isOut ? 'OUT_OF_STOCK' : isLow ? 'LOW_STOCK' : 'IN_STOCK'} />
+                    </TableCell>
+                    <TableCell className="justify-center text-center">
+                      <ActionButtons 
+                        actions={[
+                          {
+                            type: 'edit',
+                            onClick: (e) => {
+                              e.stopPropagation();
                               setEditingProduct(product);
                               setFormData({ 
                                 name: product.name, 
@@ -587,33 +752,27 @@ export default function ProductsPage() {
                               } else {
                                 setFormVariants([]);
                               }
-
+                              setErrors({});
                               setIsModalOpen(true);
-                            }}
-                            className="btn-action-edit"
-                            title="Edit"
-                          >
-                            <Edit2 size={22} />
-                          </button>
-                          {isAdmin && (
-                            <button 
-                              onClick={() => { handleDelete(product._id || product.id); }}
-                              className="btn-action-delete"
-                              title="Delete"
-                            >
-                              <Trash2 size={22} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                }) : (
-                  <tr><td colSpan={6} className="p-20 text-center text-gray-500 italic">No products found in your inventory</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                            }
+                          },
+                          ...(isAdmin ? [{
+                            type: 'delete' as 'delete',
+                            onClick: (e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              handleDelete(product._id || product.id);
+                            }
+                          }] : [])
+                        ]}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              }) : (
+                <TableRow><TableCell className="justify-center py-20 w-full text-gray-500 italic">No products found in your inventory</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
 
         {/* Product Cards (Mobile) */}
@@ -755,7 +914,7 @@ export default function ProductsPage() {
                         } else {
                           setFormVariants([]);
                         }
-                        
+                        setErrors({});
                         setIsModalOpen(true);
                       }}
                       className="btn-action-edit"
@@ -804,14 +963,25 @@ export default function ProductsPage() {
                   <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-all cursor-pointer"><X size={24} /></button>
                 </div>
                 
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <form onSubmit={handleSubmit} noValidate className="space-y-8">
                   {/* General Profile */}
                   <div className="space-y-4">
                     <h3 className="text-xs font-black text-white uppercase tracking-wider">General Product Details</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-1">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Product Name</label>
-                        <input placeholder="e.g. Toothpaste" required className="w-full glass-input" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                        <input 
+                          id="field-name"
+                          placeholder="e.g. Toothpaste" 
+                          required 
+                          className={`w-full glass-input ${errors.name ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`} 
+                          value={formData.name} 
+                          onChange={(e) => {
+                            setFormData({...formData, name: e.target.value});
+                            if (errors.name) setErrors(prev => { const next = { ...prev }; delete next.name; return next; });
+                          }} 
+                        />
+                        {errors.name && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors.name}</p>}
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Category</label>
@@ -839,38 +1009,55 @@ export default function ProductsPage() {
                         >
                           <option value="STANDARD">Standard Product</option>
                           <option value="PARENT">Raw Material / Bulk Can (Parent)</option>
-                          <option value="CHILD">Converted Sellable Product (Child)</option>
+                      <option value="CHILD">Converted Sellable Product (Child)</option>
                         </select>
                       </div>
 
                       {formData.type === 'CHILD' && (
                         <>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Link Parent Product *</label>
-                            <select
-                              required
-                              className="w-full glass-select"
-                              value={formData.parent_id || ''}
-                              onChange={(e) => setFormData({...formData, parent_id: e.target.value})}
-                            >
-                              <option value="">Select Parent Product...</option>
-                              {products.filter(p => p.type === 'PARENT').map(p => (
-                                <option key={p._id} value={p._id}>{p.name} ({p.stock} {p.unit} available)</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Consumption Quantity per Child Unit *</label>
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="e.g. 0.2 (Liters of parent)"
-                              required
-                              className="w-full glass-input font-bold"
-                              value={formData.conversion_quantity || ''}
-                              onChange={(e) => setFormData({...formData, conversion_quantity: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
-                            />
-                          </div>
+                           <div className="space-y-1">
+                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Link Parent Product *</label>
+                             <select
+                               id="field-parent_id"
+                               required
+                               className={`w-full glass-select ${errors.parent_id ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
+                               value={formData.parent_id || ''}
+                               onChange={(e) => {
+                                 setFormData({...formData, parent_id: e.target.value});
+                                 if (errors.parent_id) setErrors(prev => { const next = { ...prev }; delete next.parent_id; return next; });
+                               }}
+                             >
+                               <option value="">Select Parent Product...</option>
+                               {products.filter(p => p.type === 'PARENT').map(p => (
+                                 <option key={p._id} value={p._id}>{p.name} ({p.stock} {p.unit} available)</option>
+                               ))}
+                             </select>
+                             {errors.parent_id && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors.parent_id}</p>}
+                           </div>
+                           <div className="space-y-1">
+                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Consumption Quantity per Child Unit *</label>
+                             <input
+                               id="field-conversion_quantity"
+                               type="number"
+                               step="any"
+                               placeholder="e.g. 0.2 (Liters of parent)"
+                               required
+                               className={`w-full glass-input font-bold ${errors.conversion_quantity ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
+                               value={formData.conversion_quantity || ''}
+                               onChange={(e) => {
+                                 setFormData({...formData, conversion_quantity: e.target.value === '' ? 0 : parseFloat(e.target.value)});
+                                 if (errors.conversion_quantity) setErrors(prev => { const next = { ...prev }; delete next.conversion_quantity; return next; });
+                               }}
+                             />
+                             {errors.conversion_quantity && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors.conversion_quantity}</p>}
+                             {(() => {
+                               const parent = products.find(p => p._id === formData.parent_id || p.id === formData.parent_id);
+                               if (parent && parent.unit === 'LITER' && formData.conversion_quantity > 0) {
+                                 return <p className="text-[10px] text-cyan-400 font-bold mt-1 ml-1">{formData.conversion_quantity} Liter → {formData.conversion_quantity * 1000}ml</p>;
+                               }
+                               return null;
+                             })()}
+                           </div>
                         </>
                       )}
                     </div>
@@ -946,9 +1133,10 @@ export default function ProductsPage() {
                               <div className="space-y-1">
                                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">SKU / Unique ID</label>
                                 <input
+                                  id={`field-variant-${vIdx}-sku`}
                                   type="text"
                                   placeholder="SKU-VAR-1"
-                                  className="w-full glass-input text-xs font-mono font-bold"
+                                  className={`w-full glass-input text-xs font-mono font-bold ${errors[`variant-${vIdx}-sku`] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
                                   value={v.sku}
                                   onChange={(e) => updateVariantField(vIdx, 'sku', e.target.value)}
                                 />
@@ -956,41 +1144,48 @@ export default function ProductsPage() {
                               <div className="space-y-1">
                                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Cost Price *</label>
                                 <input
+                                  id={`field-variant-${vIdx}-costPrice`}
                                   type="number"
                                   step="0.01"
                                   required
                                   placeholder="0.00"
-                                  className="w-full glass-input text-xs font-bold"
+                                  className={`w-full glass-input text-xs font-bold ${errors[`variant-${vIdx}-costPrice`] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
                                   value={v.costPrice || ''}
                                   onChange={(e) => updateVariantField(vIdx, 'costPrice', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                                 />
+                                {errors[`variant-${vIdx}-costPrice`] && <p className="text-[9px] text-rose-400 font-bold mt-1 ml-1">{errors[`variant-${vIdx}-costPrice`]}</p>}
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Selling Price *</label>
                                 <input
+                                  id={`field-variant-${vIdx}-sellingPrice`}
                                   type="number"
                                   step="0.01"
                                   required
                                   placeholder="0.00"
-                                  className="w-full glass-input text-xs font-bold text-cyan-400"
+                                  className={`w-full glass-input text-xs font-bold text-cyan-400 ${errors[`variant-${vIdx}-sellingPrice`] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
                                   value={v.sellingPrice || ''}
                                   onChange={(e) => updateVariantField(vIdx, 'sellingPrice', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                                 />
+                                {errors[`variant-${vIdx}-sellingPrice`] && <p className="text-[9px] text-rose-400 font-bold mt-1 ml-1">{errors[`variant-${vIdx}-sellingPrice`]}</p>}
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Received Stock Qty</label>
                                 <input
+                                  id={`field-variant-${vIdx}-stock`}
                                   type="number"
                                   required
                                   placeholder="0"
-                                  className="w-full glass-input text-xs font-bold"
+                                  className={`w-full glass-input text-xs font-bold ${errors[`variant-${vIdx}-stock`] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
                                   value={v.stock || ''}
                                   onChange={(e) => updateVariantField(vIdx, 'stock', e.target.value === '' ? 0 : parseInt(e.target.value))}
                                 />
+                                {errors[`variant-${vIdx}-stock`] && <p className="text-[9px] text-rose-400 font-bold mt-1 ml-1">{errors[`variant-${vIdx}-stock`]}</p>}
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Unit Type</label>
                                 <select
+                                  id={`field-variant-${vIdx}-unit`}
                                   className="w-full glass-select text-xs font-bold cursor-pointer"
                                   value={v.unit}
                                   onChange={(e) => updateVariantField(vIdx, 'unit', e.target.value)}
@@ -1003,8 +1198,9 @@ export default function ProductsPage() {
                               <div className="space-y-1">
                                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Supplier Source *</label>
                                 <select
+                                  id={`field-variant-${vIdx}-supplierId`}
                                   required
-                                  className="w-full glass-select"
+                                  className={`w-full glass-select ${errors[`variant-${vIdx}-supplierId`] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
                                   value={v.supplierId}
                                   onChange={(e) => updateVariantField(vIdx, 'supplierId', e.target.value)}
                                 >
@@ -1013,6 +1209,7 @@ export default function ProductsPage() {
                                     <option key={s._id} value={s._id}>{s.name} - {s.companyName}</option>
                                   ))}
                                 </select>
+                                {errors[`variant-${vIdx}-supplierId`] && <p className="text-[9px] text-rose-400 font-bold mt-1 ml-1">{errors[`variant-${vIdx}-supplierId`]}</p>}
                               </div>
                             </div>
 
@@ -1031,32 +1228,46 @@ export default function ProductsPage() {
                                   </button>
                                 </div>
 
-                                <div className="space-y-2">
+                                <div id={`field-variant-${vIdx}-allocations`} className="space-y-2">
+                                  {errors[`variant-${vIdx}-allocations`] && (
+                                    <p className="text-xs text-rose-400 font-bold flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl">
+                                      <AlertCircle size={12} className="shrink-0" />
+                                      <span>{errors[`variant-${vIdx}-allocations`]}</span>
+                                    </p>
+                                  )}
                                   {(!v.allocations || v.allocations.length === 0) ? (
                                     <p className="text-[10px] text-amber-400/80 italic bg-amber-500/5 p-2.5 rounded-xl border border-amber-500/10">Please add at least one warehouse row to allocate this variant's stock.</p>
                                   ) : (
                                     v.allocations.map((alloc: any, aIdx: number) => (
-                                      <div key={aIdx} className="flex gap-2 items-center">
-                                        <select
-                                          required
-                                          className="flex-1 glass-select"
-                                          value={alloc.warehouseId}
-                                          onChange={(e) => updateVariantAllocation(vIdx, aIdx, 'warehouseId', e.target.value)}
-                                        >
-                                          <option value="">Select Warehouse...</option>
-                                          {warehouses.map(w => (
-                                            <option key={w._id} value={w._id}>{w.name} ({w.location})</option>
-                                          ))}
-                                        </select>
-                                        <input
-                                          type="number"
-                                          required
-                                          min="1"
-                                          placeholder="Qty"
-                                          className="w-24 glass-input font-bold"
-                                          value={alloc.quantity || ''}
-                                          onChange={(e) => updateVariantAllocation(vIdx, aIdx, 'quantity', Number(e.target.value) || 0)}
-                                        />
+                                      <div key={aIdx} className="flex gap-2 items-center flex-wrap md:flex-nowrap">
+                                        <div className="flex-1 min-w-[150px]">
+                                          <select
+                                            id={`field-variant-${vIdx}-allocation-${aIdx}-warehouse`}
+                                            required
+                                            className={`w-full glass-select ${errors[`variant-${vIdx}-allocation-${aIdx}-warehouse`] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
+                                            value={alloc.warehouseId}
+                                            onChange={(e) => updateVariantAllocation(vIdx, aIdx, 'warehouseId', e.target.value)}
+                                          >
+                                            <option value="">Select Warehouse...</option>
+                                            {warehouses.map(w => (
+                                              <option key={w._id} value={w._id}>{w.name} ({w.location})</option>
+                                            ))}
+                                          </select>
+                                          {errors[`variant-${vIdx}-allocation-${aIdx}-warehouse`] && <p className="text-[9px] text-rose-400 font-bold mt-0.5 ml-1">{errors[`variant-${vIdx}-allocation-${aIdx}-warehouse`]}</p>}
+                                        </div>
+                                        <div className="w-24">
+                                          <input
+                                            id={`field-variant-${vIdx}-allocation-${aIdx}-quantity`}
+                                            type="number"
+                                            required
+                                            min="1"
+                                            placeholder="Qty"
+                                            className={`w-full glass-input font-bold ${errors[`variant-${vIdx}-allocation-${aIdx}-quantity`] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
+                                            value={alloc.quantity || ''}
+                                            onChange={(e) => updateVariantAllocation(vIdx, aIdx, 'quantity', Number(e.target.value) || 0)}
+                                          />
+                                          {errors[`variant-${vIdx}-allocation-${aIdx}-quantity`] && <p className="text-[9px] text-rose-400 font-bold mt-0.5 ml-1">{errors[`variant-${vIdx}-allocation-${aIdx}-quantity`]}</p>}
+                                        </div>
                                         <button
                                           type="button"
                                           onClick={() => removeVariantAllocation(vIdx, aIdx)}
@@ -1100,13 +1311,24 @@ export default function ProductsPage() {
                         <div className="space-y-4">
                           <div className="space-y-1">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">SKU / Model Number</label>
-                            <input placeholder="Unique ID" className="w-full glass-input font-mono font-bold" value={formData.sku} onChange={(e) => setFormData({...formData, sku: e.target.value})} />
+                            <input 
+                              id="field-sku"
+                              placeholder="Unique ID" 
+                              className={`w-full glass-input font-mono font-bold ${errors.sku ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`} 
+                              value={formData.sku} 
+                              onChange={(e) => {
+                                setFormData({...formData, sku: e.target.value});
+                                if (errors.sku) setErrors(prev => { const next = { ...prev }; delete next.sku; return next; });
+                              }} 
+                            />
+                            {errors.sku && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors.sku}</p>}
                           </div>
                           {formData.type === 'CHILD' ? (
                             <div className="space-y-1">
                               <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Received Stock Qty (Auto-Calculated)</label>
                               <div className="relative">
                                 <input
+                                  id="field-stock"
                                   type="number"
                                   readOnly
                                   className="w-full glass-input font-bold text-cyan-400 bg-white/3 cursor-not-allowed opacity-80"
@@ -1123,10 +1345,20 @@ export default function ProductsPage() {
                           ) : (
                             <div className="space-y-1">
                               <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Received Stock Level</label>
-                              <input type="number" placeholder="0" required className="w-full glass-input font-bold" value={formData.stock || ''} onChange={(e) => {
-                                const newStock = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                setFormData({...formData, stock: newStock});
-                              }} />
+                              <input 
+                                id="field-stock"
+                                type="number" 
+                                placeholder="0" 
+                                required 
+                                className={`w-full glass-input font-bold ${errors.stock ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
+                                value={formData.stock || ''} 
+                                onChange={(e) => {
+                                  const newStock = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                  setFormData({...formData, stock: newStock});
+                                  if (errors.stock || errors.allocations) setErrors(prev => { const next = { ...prev }; delete next.stock; delete next.allocations; return next; });
+                                }} 
+                              />
+                              {errors.stock && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors.stock}</p>}
                             </div>
                           )}
                         </div>
@@ -1134,16 +1366,21 @@ export default function ProductsPage() {
                           <div className="space-y-1">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Supplier Source *</label>
                             <select
+                              id="field-supplierId"
                               required={formVariants.length === 0}
-                              className="w-full glass-select"
+                              className={`w-full glass-select ${errors.supplierId ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
                               value={formData.supplierId}
-                              onChange={(e) => setFormData({...formData, supplierId: e.target.value})}
+                              onChange={(e) => {
+                                setFormData({...formData, supplierId: e.target.value});
+                                if (errors.supplierId) setErrors(prev => { const next = { ...prev }; delete next.supplierId; return next; });
+                              }}
                             >
                               <option value="">Select Supplier source...</option>
                               {suppliers.map(s => (
                                 <option key={s._id} value={s._id}>{s.name} - {s.companyName}</option>
                               ))}
                             </select>
+                            {errors.supplierId && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors.supplierId}</p>}
                             {formData.supplierId && (
                               <p className="text-[10px] text-cyan-400 font-bold ml-1 mt-1">
                                 Supplied by: {suppliers.find(s => s._id === formData.supplierId)?.name || ''}
@@ -1153,7 +1390,8 @@ export default function ProductsPage() {
                           <div className="space-y-1">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Unit of Measure</label>
                             <select 
-                              className="w-full glass-select"
+                              id="field-unit"
+                              className={`w-full glass-select ${errors.unit ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
                               value={formData.unit}
                               onChange={(e) => {
                                 const newUnit = e.target.value;
@@ -1163,6 +1401,7 @@ export default function ProductsPage() {
                                   // Auto-suggest appropriate cost type when unit changes
                                   costCalculationType: defaultCostCalcType(newUnit)
                                 });
+                                if (errors.unit) setErrors(prev => { const next = { ...prev }; delete next.unit; return next; });
                               }}
                             >
                               <option value="UNIT">Pieces (Unit)</option>
@@ -1171,6 +1410,7 @@ export default function ProductsPage() {
                               <option value="LITER">Liters (L)</option>
                               <option value="ML">Milliliters (ML)</option>
                             </select>
+                            {errors.unit && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors.unit}</p>}
                           </div>
                         </div>
                       </div>
@@ -1229,12 +1469,17 @@ export default function ProductsPage() {
                               : 'Cost Price Per Unit (Purchase)'}
                           </label>
                           <input
+                            id="field-costPrice"
                             type="number" step="0.01" placeholder="0.00"
                             required={formVariants.length === 0}
-                            className="w-full glass-input font-bold"
+                            className={`w-full glass-input font-bold ${errors.costPrice ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
                             value={formData.costPrice || ''}
-                            onChange={(e) => setFormData({...formData, costPrice: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
+                            onChange={(e) => {
+                              setFormData({...formData, costPrice: e.target.value === '' ? 0 : parseFloat(e.target.value)});
+                              if (errors.costPrice) setErrors(prev => { const next = { ...prev }; delete next.costPrice; return next; });
+                            }}
                           />
+                          {errors.costPrice && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors.costPrice}</p>}
                           {formData.costCalculationType === 'TOTAL_BATCH' && formData.costPrice > 0 && formData.stock > 0 && (
                             <p className="text-[10px] text-amber-400/80 font-medium ml-1 mt-1">
                               Effective per unit: ₹{(formData.costPrice / formData.stock).toFixed(2)} / {formData.unit || 'unit'}
@@ -1243,13 +1488,24 @@ export default function ProductsPage() {
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Selling Price (Retail)</label>
-                          <input type="number" step="0.01" placeholder="0.00" required={formVariants.length === 0} className="w-full glass-input font-bold text-cyan-400" value={formData.sellingPrice || ''} onChange={(e) => setFormData({...formData, sellingPrice: e.target.value === '' ? 0 : parseFloat(e.target.value)})} />
+                          <input 
+                            id="field-sellingPrice"
+                            type="number" step="0.01" placeholder="0.00" 
+                            required={formVariants.length === 0} 
+                            className={`w-full glass-input font-bold text-cyan-400 ${errors.sellingPrice ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`} 
+                            value={formData.sellingPrice || ''} 
+                            onChange={(e) => {
+                              setFormData({...formData, sellingPrice: e.target.value === '' ? 0 : parseFloat(e.target.value)});
+                              if (errors.sellingPrice) setErrors(prev => { const next = { ...prev }; delete next.sellingPrice; return next; });
+                            }} 
+                          />
+                          {errors.sellingPrice && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors.sellingPrice}</p>}
                         </div>
                       </div>
 
                       {/* Warehouse allocations split manager (only for standard items) */}
                       {formData.type !== 'CHILD' && formData.stock > 0 && (
-                        <div className="space-y-4 pt-6 border-t border-white/5">
+                        <div id="field-allocations" className="space-y-4 pt-6 border-t border-white/5">
                           <div className="flex justify-between items-center">
                             <div>
                               <h4 className="text-xs font-black text-white uppercase tracking-wider">Warehouse Stock Allocation</h4>
@@ -1265,44 +1521,76 @@ export default function ProductsPage() {
                             </button>
                           </div>
 
+                          {errors.allocations && (
+                            <p className="text-xs text-rose-400 font-bold flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 p-3.5 rounded-2xl">
+                              <AlertCircle size={14} className="shrink-0" />
+                              <span>{errors.allocations}</span>
+                            </p>
+                          )}
+
                           <div className="space-y-3">
                             {formAllocations.length === 0 ? (
                               <p className="text-xs text-amber-400/80 italic bg-amber-500/5 p-3 rounded-2xl border border-amber-500/10">Please add at least one warehouse row to allocate the stock.</p>
                             ) : (
                               formAllocations.map((alloc, idx) => (
-                                <div key={idx} className="flex gap-3 items-center">
-                                  <select
-                                    required
-                                    className="flex-1 glass-select"
-                                    value={alloc.warehouseId}
-                                    onChange={(e) => {
-                                      const updated = [...formAllocations];
-                                      updated[idx].warehouseId = e.target.value;
-                                      setFormAllocations(updated);
-                                    }}
-                                  >
-                                    <option value="">Select Warehouse...</option>
-                                    {warehouses.map(w => (
-                                      <option key={w._id} value={w._id}>{w.name} ({w.location})</option>
-                                    ))}
-                                  </select>
-                                  <input
-                                    type="number"
-                                    required
-                                    min="1"
-                                    placeholder="Qty"
-                                    className="w-24 glass-input font-bold"
-                                    value={alloc.quantity || ''}
-                                    onChange={(e) => {
-                                      const updated = [...formAllocations];
-                                      updated[idx].quantity = Number(e.target.value) || 0;
-                                      setFormAllocations(updated);
-                                    }}
-                                  />
+                                <div key={idx} className="flex gap-3 items-center flex-wrap md:flex-nowrap">
+                                  <div className="flex-1 min-w-[200px]">
+                                    <select
+                                      id={`field-allocation-${idx}-warehouse`}
+                                      required
+                                      className={`w-full glass-select ${errors[`allocation-${idx}-warehouse`] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
+                                      value={alloc.warehouseId}
+                                      onChange={(e) => {
+                                        const updated = [...formAllocations];
+                                        updated[idx].warehouseId = e.target.value;
+                                        setFormAllocations(updated);
+                                        setErrors(prev => {
+                                          const next = { ...prev };
+                                          delete next[`allocation-${idx}-warehouse`];
+                                          delete next.allocations;
+                                          return next;
+                                        });
+                                      }}
+                                    >
+                                      <option value="">Select Warehouse...</option>
+                                      {warehouses.map(w => (
+                                        <option key={w._id} value={w._id}>{w.name} ({w.location})</option>
+                                      ))}
+                                    </select>
+                                    {errors[`allocation-${idx}-warehouse`] && <p className="text-[9px] text-rose-400 font-bold mt-0.5 ml-1">{errors[`allocation-${idx}-warehouse`]}</p>}
+                                  </div>
+                                  <div className="w-28">
+                                    <input
+                                      id={`field-allocation-${idx}-quantity`}
+                                      type="number"
+                                      required
+                                      min="1"
+                                      placeholder="Qty"
+                                      className={`w-full glass-input font-bold ${errors[`allocation-${idx}-quantity`] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`}
+                                      value={alloc.quantity || ''}
+                                      onChange={(e) => {
+                                        const updated = [...formAllocations];
+                                        updated[idx].quantity = Number(e.target.value) || 0;
+                                        setFormAllocations(updated);
+                                        setErrors(prev => {
+                                          const next = { ...prev };
+                                          delete next[`allocation-${idx}-quantity`];
+                                          delete next.allocations;
+                                          return next;
+                                        });
+                                      }}
+                                    />
+                                    {errors[`allocation-${idx}-quantity`] && <p className="text-[9px] text-rose-400 font-bold mt-0.5 ml-1">{errors[`allocation-${idx}-quantity`]}</p>}
+                                  </div>
                                   <button
                                     type="button"
                                     onClick={() => {
                                       setFormAllocations(formAllocations.filter((_, i) => i !== idx));
+                                      setErrors(prev => {
+                                        const next = { ...prev };
+                                        delete next.allocations;
+                                        return next;
+                                      });
                                     }}
                                     className="p-3 hover:bg-rose-500/10 text-gray-500 hover:text-rose-400 rounded-xl transition-all border border-transparent hover:border-rose-500/20 cursor-pointer"
                                   >
@@ -1359,26 +1647,36 @@ export default function ProductsPage() {
                                 <div className="space-y-1">
                                   <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Total Purchase Amount *</label>
                                   <input 
+                                    id="field-supplierPayment-purchaseAmount"
                                     type="number" step="0.01" required placeholder="0.00" 
-                                    className="w-full glass-input text-xs font-bold" 
+                                    className={`w-full glass-input text-xs font-bold ${errors['supplierPayment-purchaseAmount'] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`} 
                                     value={supplierPaymentInfo.purchaseAmount || ''} 
-                                    onChange={(e) => setSupplierPaymentInfo({ 
-                                      ...supplierPaymentInfo, 
-                                      purchaseAmount: e.target.value === '' ? 0 : parseFloat(e.target.value) 
-                                    })} 
+                                    onChange={(e) => {
+                                      setSupplierPaymentInfo({ 
+                                        ...supplierPaymentInfo, 
+                                        purchaseAmount: e.target.value === '' ? 0 : parseFloat(e.target.value) 
+                                      });
+                                      if (errors['supplierPayment-purchaseAmount']) setErrors(prev => { const next = { ...prev }; delete next['supplierPayment-purchaseAmount']; return next; });
+                                    }} 
                                   />
+                                  {errors['supplierPayment-purchaseAmount'] && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors['supplierPayment-purchaseAmount']}</p>}
                                 </div>
                                 <div className="space-y-1">
                                   <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Amount Paid *</label>
                                   <input 
+                                    id="field-supplierPayment-amountPaid"
                                     type="number" step="0.01" required placeholder="0.00" 
-                                    className="w-full glass-input text-xs font-bold" 
+                                    className={`w-full glass-input text-xs font-bold ${errors['supplierPayment-amountPaid'] ? '!border-rose-500 ring-1 ring-rose-500/50' : ''}`} 
                                     value={supplierPaymentInfo.amountPaid || ''} 
-                                    onChange={(e) => setSupplierPaymentInfo({ 
-                                      ...supplierPaymentInfo, 
-                                      amountPaid: e.target.value === '' ? 0 : parseFloat(e.target.value) 
-                                    })} 
+                                    onChange={(e) => {
+                                      setSupplierPaymentInfo({ 
+                                        ...supplierPaymentInfo, 
+                                        amountPaid: e.target.value === '' ? 0 : parseFloat(e.target.value) 
+                                      });
+                                      if (errors['supplierPayment-amountPaid']) setErrors(prev => { const next = { ...prev }; delete next['supplierPayment-amountPaid']; return next; });
+                                    }} 
                                   />
+                                  {errors['supplierPayment-amountPaid'] && <p className="text-[10px] text-rose-400 font-bold mt-1 ml-1">{errors['supplierPayment-amountPaid']}</p>}
                                 </div>
                                 <div className="space-y-1">
                                   <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Remaining Balance</label>
@@ -1475,9 +1773,37 @@ export default function ProductsPage() {
 
                   {/* Save Submit Button */}
                   <div className="pt-6">
+                    {formData.type === 'CHILD' && isChildValid && (
+                      <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 text-xs">
+                        <h4 className="font-bold text-white mb-2 uppercase tracking-wider">Validation Checklist</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className={isChildValid.hasParent ? "text-emerald-400" : "text-rose-400"}>
+                            {isChildValid.hasParent ? "✓" : "✗"} Parent Product Selected
+                          </div>
+                          <div className={isChildValid.hasConsumption ? "text-emerald-400" : "text-rose-400"}>
+                            {isChildValid.hasConsumption ? "✓" : "✗"} Consumption Quantity Valid
+                          </div>
+                          <div className={isChildValid.hasSupplier ? "text-emerald-400" : "text-rose-400"}>
+                            {isChildValid.hasSupplier ? "✓" : "✗"} Supplier Selected
+                          </div>
+                          <div className={isChildValid.hasStock ? "text-emerald-400" : "text-rose-400"}>
+                            {isChildValid.hasStock ? "✓" : "✗"} Auto Stock Calculated
+                          </div>
+                          <div className={isChildValid.hasCostPrice ? "text-emerald-400" : "text-rose-400"}>
+                            {isChildValid.hasCostPrice ? "✓" : "✗"} Cost Price Entered
+                          </div>
+                          <div className={isChildValid.hasSellingPrice ? "text-emerald-400" : "text-rose-400"}>
+                            {isChildValid.hasSellingPrice ? "✓" : "✗"} Selling Price Entered
+                          </div>
+                          <div className={isChildValid.hasSku ? "text-emerald-400" : "text-rose-400"}>
+                            {isChildValid.hasSku ? "✓" : "✗"} SKU Entered
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <button 
                       type="submit" 
-                      disabled={loading || (formVariants.length === 0 ? !allocationsMatch : !isVariantsAllocationValid())} 
+                      disabled={disabledCondition} 
                       className="w-full btn-primary"
                     >
                       {loading ? <Loader2 className="animate-spin" /> : (editingProduct ? 'UPDATE INVENTORY PROFILE' : 'CONFIRM PRODUCT ADDITION')}

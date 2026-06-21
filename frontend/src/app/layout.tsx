@@ -1,18 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import LiquidBackground from "@/components/LiquidBackground";
 import { Toaster } from "sonner";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "AuraSales | Premium Business Tracker",
@@ -30,11 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col selection:bg-cyan-500/30" suppressHydrationWarning>
+    <html lang="en">
+      <body className="antialiased font-sans bg-slate-950 text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200" suppressHydrationWarning>
         <ErrorBoundary>
           <UserProvider>
             <ThemeProvider>

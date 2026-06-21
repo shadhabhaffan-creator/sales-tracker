@@ -23,6 +23,9 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, truncateUUID } from '@/components/ui/Table';
+import { StatusBadge, BadgeStatus } from '@/components/ui/StatusBadge';
+import { ActionButtons } from '@/components/ui/ActionButtons';
 
 export default function OutstandingPaymentsPage() {
   const { isAdmin } = useUser();
@@ -335,66 +338,64 @@ export default function OutstandingPaymentsPage() {
               No matching accounts payable records found.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 text-[10px] font-black text-slate-500 uppercase tracking-wider bg-white/5">
-                    <th className="py-5 px-6">Supplier Details</th>
-                    <th className="py-5 px-4">Product Name</th>
-                    <th className="py-5 px-4">Reference ID</th>
-                    <th className="py-5 px-4 text-right">Invoice Amount</th>
-                    <th className="py-5 px-4 text-right">Amount Paid</th>
-                    <th className="py-5 px-4 text-right">Outstanding</th>
-                    <th className="py-5 px-4">Pay Method</th>
-                    <th className="py-5 px-4">Due Date</th>
-                    <th className="py-5 px-4">Days Left</th>
-                    <th className="py-5 px-4">Status</th>
-                    <th className="py-5 px-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 text-xs">
+            <div className="w-full">
+              <Table>
+                <TableHeader>
+                  <TableHead>Supplier Details</TableHead>
+                  <TableHead>Product Name</TableHead>
+                  <TableHead>Reference ID</TableHead>
+                  <TableHead className="justify-end text-right">Invoice Amount</TableHead>
+                  <TableHead className="justify-end text-right">Amount Paid</TableHead>
+                  <TableHead className="justify-end text-right">Outstanding</TableHead>
+                  <TableHead>Pay Method</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Days Left</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="justify-center text-center">Actions</TableHead>
+                </TableHeader>
+                <TableBody>
                   {filteredPayments.map((payment: any) => {
                     const statusInfo = getStatusDetails(payment);
                     const daysRemaining = getDaysRemaining(payment.dueDate);
                     
                     return (
-                      <tr key={payment._id || payment.id} className="hover:bg-white/5 transition-colors group">
-                        <td className="py-4 px-6 font-bold">
+                      <TableRow key={payment._id || payment.id}>
+                        <TableCell className="flex-col items-start gap-0 font-bold">
                           <span className="block text-white group-hover:text-cyan-400 transition-colors">
                             {payment.supplierId?.name || 'Unknown'}
                           </span>
                           <span className="block text-[10px] text-gray-500">
                             {payment.supplierId?.companyName || 'Unknown Co.'}
                           </span>
-                        </td>
-                        <td className="py-4 px-4 text-gray-300 font-medium">
+                        </TableCell>
+                        <TableCell className="text-gray-300 font-medium">
                           {payment.productId?.name || 'Product Deleted'}
-                        </td>
-                        <td className="py-4 px-4 text-gray-400 font-mono text-[10px]">
-                          {payment.transactionId || 'No Ref'}
-                        </td>
-                        <td className="py-4 px-4 text-right font-bold text-white">
+                        </TableCell>
+                        <TableCell className="text-gray-400 font-mono text-[10px]" title={payment.transactionId || ''}>
+                          {payment.transactionId ? truncateUUID(payment.transactionId) : 'No Ref'}
+                        </TableCell>
+                        <TableCell className="justify-end text-right font-bold text-white">
                           ₹{Number(payment?.purchaseAmount || 0).toLocaleString()}
-                        </td>
-                        <td className="py-4 px-4 text-right text-emerald-400 font-semibold">
+                        </TableCell>
+                        <TableCell className="justify-end text-right text-emerald-400 font-semibold">
                           ₹{Number(payment?.amountPaid || 0).toLocaleString()}
-                        </td>
-                        <td className="py-4 px-4 text-right text-cyan-400 font-mono font-bold">
+                        </TableCell>
+                        <TableCell className="justify-end text-right text-cyan-400 font-mono font-bold">
                           ₹{Number(payment?.remainingBalance || 0).toLocaleString()}
-                        </td>
-                        <td className="py-4 px-4">
+                        </TableCell>
+                        <TableCell>
                           <span className="px-2 py-0.5 bg-white/5 rounded text-[10px] font-black text-gray-400">
                             {payment.paymentMethod}
                           </span>
-                        </td>
-                        <td className="py-4 px-4 text-gray-400 font-medium">
+                        </TableCell>
+                        <TableCell className="text-gray-400 font-medium">
                           {new Date(payment.dueDate).toLocaleDateString(undefined, {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric'
                           })}
-                        </td>
-                        <td className="py-4 px-4">
+                        </TableCell>
+                        <TableCell>
                           {payment.remainingBalance === 0 ? (
                             <span className="text-[10px] font-bold text-emerald-400">Settled</span>
                           ) : daysRemaining < 0 ? (
@@ -410,14 +411,14 @@ export default function OutstandingPaymentsPage() {
                               {daysRemaining}d Left
                             </span>
                           )}
-                        </td>
-                        <td className="py-4 px-4">
+                        </TableCell>
+                        <TableCell>
                           <span className={statusInfo.bg}>
                             {statusInfo.label}
                           </span>
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <div className="flex gap-2 justify-end">
+                        </TableCell>
+                        <TableCell className="justify-center text-center">
+                          <div className="flex items-center justify-center gap-2 w-full">
                             {payment.paymentsHistory?.length > 0 && (
                               <button 
                                 onClick={() => {
@@ -427,24 +428,24 @@ export default function OutstandingPaymentsPage() {
                                 className="btn-secondary btn-sm flex items-center justify-center p-0 w-9"
                                 title="View Payment Logs"
                               >
-                                <FileText size={13} />
+                                <FileText size={16} />
                               </button>
                             )}
                             {payment.remainingBalance > 0 && isAdmin && (
                               <button 
                                 onClick={() => openPayModal(payment)}
-                                className="btn-primary btn-sm"
+                                className="btn-primary btn-sm px-4 py-2"
                               >
                                 <span>PAY</span>
                               </button>
                             )}
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

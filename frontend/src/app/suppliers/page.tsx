@@ -9,6 +9,9 @@ import {
   MessageSquare, User, Mail, Phone, Lock, FileSpreadsheet, MapPin, 
   Layers, ChevronRight, Grid, List, AlertTriangle
 } from 'lucide-react';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ActionButtons } from '@/components/ui/ActionButtons';
 import { toast } from 'sonner';
 import { useUser } from '@/components/UserContext';
 import { useCurrency } from '@/components/CurrencyContext';
@@ -484,73 +487,66 @@ export default function SuppliersPage() {
           </div>
         ) : (
           /* Table View */
-          <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                    <th className="p-6">Supplier</th>
-                    <th className="p-6">Contact Person</th>
-                    <th className="p-6">Company</th>
-                    <th className="p-6">Phone / Email</th>
-                    <th className="p-6">Status</th>
-                    <th className="p-6">Terms</th>
-                    <th className="p-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredSuppliers.map((supplier) => (
-                    <tr 
-                      key={supplier._id} 
-                      onClick={() => setSelectedSupplier(supplier)}
-                      className="hover:bg-white/2 transition-all text-sm cursor-pointer group"
-                    >
-                      <td className="p-6 font-bold text-white">{supplier.name}</td>
-                      <td className="p-6 text-gray-300">{supplier.contactPerson || '-'}</td>
-                      <td className="p-6 text-gray-400 font-bold">{supplier.companyName || '-'}</td>
-                      <td className="p-6">
+          <div className="w-full">
+            <Table>
+              <TableHeader>
+                <TableHead>Supplier</TableHead>
+                <TableHead>Contact Person</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Phone / Email</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Terms</TableHead>
+                <TableHead className="justify-center text-center">Actions</TableHead>
+              </TableHeader>
+              <TableBody>
+                {filteredSuppliers.map((supplier) => (
+                  <TableRow 
+                    key={supplier._id} 
+                    onClick={() => setSelectedSupplier(supplier)}
+                  >
+                    <TableCell className="font-bold text-white">{supplier.name}</TableCell>
+                    <TableCell className="text-gray-300">{supplier.contactPerson || '-'}</TableCell>
+                    <TableCell className="text-gray-400 font-bold">{supplier.companyName || '-'}</TableCell>
+                    <TableCell>
+                      <div>
                         <p className="text-gray-300 text-xs">{supplier.phone || '-'}</p>
                         <p className="text-gray-500 text-[10px]">{supplier.email || '-'}</p>
-                      </td>
-                      <td className="p-6">
-                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
-                          supplier.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                        }`}>
-                          {supplier.status}
-                        </span>
-                      </td>
-                      <td className="p-6 text-gray-400 text-xs">{supplier.paymentTerms || '-'}</td>
-                      <td className="p-6 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-3">
-                          {isAdmin && (
-                            <>
-                              <button 
-                                onClick={(e) => openPurchaseModal(e, supplier)}
-                                className="btn-secondary btn-sm"
-                              >
-                                Ingest
-                              </button>
-                              <button 
-                                onClick={(e) => openEditModal(e, supplier)}
-                                className="btn-action-edit"
-                              >
-                                <Edit2 size={22} />
-                              </button>
-                              <button 
-                                onClick={(e) => handleDeleteSupplier(e, supplier)}
-                                className="btn-action-delete"
-                              >
-                                <Trash2 size={22} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={supplier.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE'} />
+                    </TableCell>
+                    <TableCell className="text-gray-400 text-xs">{supplier.paymentTerms || '-'}</TableCell>
+                    <TableCell className="justify-center text-center">
+                      <div className="flex justify-center gap-3 w-full" onClick={(e) => e.stopPropagation()}>
+                        {isAdmin && (
+                          <>
+                            <button 
+                              onClick={(e) => openPurchaseModal(e, supplier)}
+                              className="btn-secondary btn-sm h-10 px-4 rounded-xl"
+                            >
+                              Ingest
+                            </button>
+                            <ActionButtons 
+                              actions={[
+                                {
+                                  type: 'edit',
+                                  onClick: (e) => openEditModal(e, supplier)
+                                },
+                                {
+                                  type: 'delete',
+                                  onClick: (e) => handleDeleteSupplier(e, supplier)
+                                }
+                              ]}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
 

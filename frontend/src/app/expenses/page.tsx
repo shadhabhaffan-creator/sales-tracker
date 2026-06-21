@@ -10,6 +10,9 @@ import { useUser } from '@/components/UserContext';
 import { fetchWithAuth } from '@/services/api';
 
 import { Search, Filter, RefreshCcw, Paperclip, ChevronRight, TrendingDown, DollarSign, Calendar as CalendarIcon, Tag } from 'lucide-react';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, truncateUUID } from '@/components/ui/Table';
+import { StatusBadge, BadgeStatus } from '@/components/ui/StatusBadge';
+import { ActionButtons } from '@/components/ui/ActionButtons';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { format } from 'date-fns';
 
@@ -117,52 +120,53 @@ export default function ExpensesPage() {
               </button>
             </div>
 
-            <div className="glass-panel rounded-2xl overflow-hidden border border-white/10">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                      <th className="p-6">Description</th>
-                      <th className="p-6">Category</th>
-                      <th className="p-6">Payment</th>
-                      <th className="p-6">Amount</th>
-                      <th className="p-6">Type</th>
-                      <th className="p-6 text-right">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {loading ? (
-                      <tr><td colSpan={5} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-rose-400 w-10 h-10" /></td></tr>
-                    ) : expenses.length > 0 ? expenses.map((expense) => (
-                      <tr key={expense._id} className="hover:bg-white/5 transition-colors group cursor-pointer">
-                        <td className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 border border-rose-500/20">
-                              <Receipt size={18} />
-                            </div>
-                            <div>
-                              <p className="font-bold text-white group-hover:text-rose-400 transition-colors">{expense.title}</p>
-                              {expense.notes && <p className="text-[10px] text-gray-500 truncate max-w-[150px] italic">"{expense.notes}"</p>}
-                            </div>
+            <div className="w-full">
+              <Table>
+                <TableHeader>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead className="justify-end text-right">Amount</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="justify-end text-right">Date</TableHead>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell className="justify-center py-20 w-full">
+                        <Loader2 className="animate-spin mx-auto text-rose-400 w-10 h-10" />
+                      </TableCell>
+                    </TableRow>
+                  ) : expenses.length > 0 ? expenses.map((expense) => {
+                    let badgeStatus: BadgeStatus = 'PAID';
+                    if (expense.paymentMethod === 'CASH') badgeStatus = 'PAID';
+                    else if (expense.paymentMethod === 'UPI') badgeStatus = 'ACTIVE';
+                    else badgeStatus = 'INACTIVE';
+
+                    return (
+                      <TableRow key={expense._id}>
+                        <TableCell className="flex gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 border border-rose-500/20 shrink-0">
+                            <Receipt size={18} />
                           </div>
-                        </td>
-                        <td className="p-6">
+                          <div className="flex flex-col items-start justify-center gap-0">
+                            <p className="font-bold text-white group-hover:text-rose-400 transition-colors">{expense.title}</p>
+                            {expense.notes && <p className="text-[10px] text-gray-500 truncate max-w-[150px] italic">"{expense.notes}"</p>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400">
                             {expense.category}
                           </span>
-                        </td>
-                        <td className="p-6">
-                          <span className={
-                            expense.paymentMethod === 'CASH' ? 'badge-success' :
-                            expense.paymentMethod === 'UPI' ? 'badge-primary' :
-                            'badge-muted'
-                          }>
-                            {expense.paymentMethod || 'CASH'}
-                          </span>
-                          {expense.transactionId && <p className="text-[9px] text-gray-500 mt-1 font-mono">{expense.transactionId}</p>}
-                        </td>
-                        <td className="p-6 font-black text-rose-400">{formatPrice(expense.amount)}</td>
-                        <td className="p-6">
+                        </TableCell>
+                        <TableCell className="flex-col items-start gap-0">
+                          <StatusBadge status={badgeStatus} label={expense.paymentMethod || 'CASH'} />
+                          {expense.transactionId && <p className="text-[9px] text-gray-500 mt-1 font-mono" title={expense.transactionId}>{truncateUUID(expense.transactionId)}</p>}
+                        </TableCell>
+                        <TableCell className="justify-end text-right font-black text-rose-400">
+                          {formatPrice(expense.amount)}
+                        </TableCell>
+                        <TableCell>
                           {expense.isRecurring ? (
                             <div className="flex items-center gap-2 text-indigo-400">
                               <RefreshCcw size={14} className="animate-spin-slow" />
@@ -171,21 +175,25 @@ export default function ExpensesPage() {
                           ) : (
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">ONE-TIME</span>
                           )}
-                        </td>
-                        <td className="p-6 text-right">
+                        </TableCell>
+                        <TableCell className="justify-end text-right flex-col items-end gap-0">
                           <p className="text-sm font-medium text-gray-400">{format(new Date(expense.date), 'MMM dd, yyyy')}</p>
                           <button className="text-[10px] font-bold text-cyan-400 hover:underline flex items-center gap-1 justify-end mt-1">
                             <Paperclip size={10} />
                             <span>View Receipt</span>
                           </button>
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={5} className="p-20 text-center text-gray-500 italic">No expense records found</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }) : (
+                    <TableRow>
+                      <TableCell className="justify-center py-20 w-full text-gray-500 italic">
+                        No expense records found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </div>
 
