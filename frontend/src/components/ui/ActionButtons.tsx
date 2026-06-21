@@ -41,7 +41,6 @@ export function ActionButtons({ actions }: ActionButtonsProps) {
       {actions.map((action, idx) => {
         const Icon = getIcon(action.type);
         const btnClass = getBtnClass(action.type);
-        const labelText = action.type === 'edit' ? 'Edit' : action.type === 'delete' ? 'Delete' : '';
         
         return (
           <button
@@ -55,13 +54,10 @@ export function ActionButtons({ actions }: ActionButtonsProps) {
               }
             }}
             disabled={action.disabled}
-            className={`${btnClass} h-11 min-w-[44px] px-3.5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border outline-none focus:ring-2 focus:ring-cyan-500/50`}
+            className={`${btnClass} w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border outline-none focus:ring-2 focus:ring-cyan-500/50 shrink-0`}
             title={action.title || action.type.charAt(0).toUpperCase() + action.type.slice(1)}
           >
-            <Icon size={20} className="shrink-0" />
-            {labelText && (
-              <span className="hidden lg:inline text-xs font-bold shrink-0">{labelText}</span>
-            )}
+            <Icon size={18} className="shrink-0" />
           </button>
         );
       })}

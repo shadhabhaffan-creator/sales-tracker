@@ -593,13 +593,14 @@ export default function ProductsPage() {
 
         {/* Products Table (Desktop) */}
         <div className="hidden md:block">
-          <Table gridTemplate="35% 12% 15% 15% 10% 13%">
+          <Table gridTemplate="3fr 1fr 1.2fr 1.2fr 1fr 1fr 1.2fr">
             <TableHeader>
-              <TableHead>Product Information</TableHead>
+              <TableHead className="justify-center text-center">Product Information</TableHead>
               <TableHead className="justify-center text-center">Stock</TableHead>
-              <TableHead>Unit Costs</TableHead>
-              <TableHead>Profit Margin</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="justify-center text-center">Cost Price</TableHead>
+              <TableHead className="justify-center text-center">Selling Price</TableHead>
+              <TableHead className="justify-center text-center">Profit</TableHead>
+              <TableHead className="justify-center text-center">Status</TableHead>
               <TableHead className="justify-center text-center">Actions</TableHead>
             </TableHeader>
             <TableBody>
@@ -616,17 +617,17 @@ export default function ProductsPage() {
                     key={product._id || product.id} 
                     onClick={() => setSelectedProduct(product)}
                   >
-                    <TableCell>
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/5 overflow-hidden">
+                    <TableCell className="justify-center text-center">
+                      <div className="flex items-center gap-3 justify-center text-center w-full">
+                        <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center border border-white/5 overflow-hidden shrink-0">
                           {product.image ? (
                             <img src={product.image} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <Package className="text-gray-600 group-hover:text-cyan-400 transition-colors" size={24} />
+                            <Package className="text-gray-600 group-hover:text-cyan-400 transition-colors" size={20} />
                           )}
                         </div>
-                        <div>
-                          <p className="font-bold text-white group-hover:text-cyan-400 transition-colors flex items-center gap-2">
+                        <div className="text-left shrink-0">
+                          <p className="font-bold text-white group-hover:text-cyan-400 transition-colors flex items-center gap-1.5">
                             {product.name}
                             {product.type === 'PARENT' && (
                               <span className="text-[8px] font-black tracking-wider uppercase bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1.5 py-0.5 rounded">
@@ -650,37 +651,45 @@ export default function ProductsPage() {
                                 • Parent: {products.find(p => p._id === product.parent_id || p.id === product.parent_id)?.name || 'Bulk Link'}
                               </span>
                             ) : product.supplierId ? (
-                              <span className="text-[10px] text-cyan-400 font-bold">
-                                • Supplied by: {product.supplierId.name || product.supplierId}
-                              </span>
+                              (() => {
+                                const sId = product.supplierId._id || product.supplierId.id || product.supplierId;
+                                const supplierObj = suppliers.find(s => s._id === sId || s.id === sId);
+                                const supplierName = supplierObj ? supplierObj.name : (product.supplierId.name || '');
+                                if (!supplierName) return null;
+                                return (
+                                  <span className="text-[10px] text-cyan-400 font-bold">
+                                    • Supplied by: {supplierName}
+                                  </span>
+                                );
+                              })()
                             ) : null}
                           </div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="justify-center">
-                      <div className="text-center">
-                        <p className={`text-lg font-black ${isOut ? 'text-rose-500' : isLow ? 'text-amber-500' : 'text-emerald-500'}`}>
+                    <TableCell className="justify-center text-center">
+                      <div>
+                        <p className={`text-sm font-black ${isOut ? 'text-rose-500' : isLow ? 'text-amber-500' : 'text-emerald-500'}`}>
                           {product.stock}
                         </p>
-                        <p className="text-[10px] text-gray-600 uppercase font-black tracking-widest">{product.type === 'CHILD' ? 'Units' : (product.type === 'PARENT' && (product.unit === 'LITER' || product.unit === 'UNIT') ? 'L' : (product.unit === 'LITER' ? 'L' : (product.unit === 'UNIT' ? 'Units' : (product.unit || 'L'))))}</p>
+                        <p className="text-[9px] text-gray-600 uppercase font-black tracking-widest">{product.type === 'CHILD' ? 'Units' : (product.type === 'PARENT' && (product.unit === 'LITER' || product.unit === 'UNIT') ? 'L' : (product.unit === 'LITER' ? 'L' : (product.unit === 'UNIT' ? 'Units' : (product.unit || 'L'))))}</p>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-500 font-medium">Cost: {formatPrice(product.costPrice)}</p>
-                        <p className="font-black text-white">Price: {formatPrice(product.sellingPrice)}</p>
-                      </div>
+                    <TableCell className="justify-center text-center font-semibold text-white">
+                      {formatPrice(product.costPrice)}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded border border-emerald-500/20">
+                    <TableCell className="justify-center text-center font-bold text-white">
+                      {formatPrice(product.sellingPrice)}
+                    </TableCell>
+                    <TableCell className="justify-center text-center">
+                      <div className="flex flex-col items-center justify-center gap-1 text-center">
+                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded border border-emerald-500/20">
                           +{margin.toFixed(1)}%
-                        </div>
-                        <p className="text-xs font-bold text-emerald-500">+{formatPrice(profit)}</p>
+                        </span>
+                        <span className="text-xs font-bold text-emerald-500">+{formatPrice(profit)}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="justify-center text-center">
                       <StatusBadge status={isOut ? 'OUT_OF_STOCK' : isLow ? 'LOW_STOCK' : 'IN_STOCK'} />
                     </TableCell>
                     <TableCell className="justify-center text-center">

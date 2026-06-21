@@ -27,7 +27,7 @@ export function TableHeader({ children }: { children: ReactNode }) {
     <thead>
       <tr 
         style={style}
-        className={`bg-white/5 border-b border-white/5 text-[10px] font-black text-gray-500 uppercase tracking-widest h-14 ${
+        className={`bg-white/5 border-b border-white/5 text-[10px] font-black text-gray-500 uppercase tracking-widest h-12 ${
           context?.isGrid ? 'grid w-full items-center' : ''
         }`}
       >
@@ -54,7 +54,7 @@ export function TableRow({ children, onClick, className = '' }: { children: Reac
       onClick={onClick}
       style={style}
       className={`hover:bg-white/5 transition-colors text-sm group ${onClick ? 'cursor-pointer' : ''} ${
-        context?.isGrid ? 'grid w-full items-center border-b border-white/5' : ''
+        context?.isGrid ? 'grid w-full items-center border-b border-white/5 h-[72px] min-h-[72px]' : ''
       } ${className}`}
     >
       {children}
@@ -65,12 +65,12 @@ export function TableRow({ children, onClick, className = '' }: { children: Reac
 function getAlignmentClasses(className: string) {
   const classes = className.split(/\s+/);
   
-  const hasCenter = classes.some(c => c === 'justify-center' || c === 'text-center' || c.endsWith(':justify-center') || c.endsWith(':text-center'));
+  const hasStart = classes.some(c => c === 'justify-start' || c === 'text-left' || c.endsWith(':justify-start') || c.endsWith(':text-left'));
   const hasEnd = classes.some(c => c === 'justify-end' || c === 'text-right' || c.endsWith(':justify-end') || c.endsWith(':text-right'));
   
-  if (hasCenter) return 'justify-center text-center';
+  if (hasStart) return 'justify-start text-left';
   if (hasEnd) return 'justify-end text-right';
-  return 'justify-start text-left';
+  return 'justify-center text-center';
 }
 
 export function TableHead({ children, className = '', title }: { children: ReactNode, className?: string, title?: string }) {
@@ -79,7 +79,7 @@ export function TableHead({ children, className = '', title }: { children: React
 
   return (
     <th className={`p-0 align-middle ${context?.isGrid ? 'h-full flex items-center' : ''} ${className}`} title={title}>
-      <div className={`flex items-center px-6 py-5 h-full min-h-[56px] w-full ${alignmentClass}`}>
+      <div className={`flex items-center px-4 py-3 h-full min-h-[48px] w-full ${alignmentClass}`}>
         {children}
       </div>
     </th>
@@ -92,7 +92,7 @@ export function TableCell({ children, className = '', title }: { children: React
 
   return (
     <td className={`p-0 align-middle ${context?.isGrid ? 'h-full flex items-center' : ''} ${className}`} title={title}>
-      <div className={`flex items-center px-6 py-[18px] h-full min-h-[80px] w-full ${alignmentClass}`}>
+      <div className={`flex items-center px-4 py-3 h-full min-h-[72px] h-[72px] w-full ${alignmentClass}`}>
         {children}
       </div>
     </td>

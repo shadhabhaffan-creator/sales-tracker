@@ -422,13 +422,13 @@ body.light-mode tbody tr:hover { background-color: rgba(0, 0, 0, 0.03) !importan
   background: rgba(56, 189, 248, 0.4);
 }
 
-/* Premium Action Buttons - 44x44px */
+/* Premium Action Buttons - 40x40px */
 .btn-action-edit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
   background: rgba(56, 189, 248, 0.08);
   color: #38bdf8;
@@ -453,8 +453,8 @@ body.light-mode tbody tr:hover { background-color: rgba(0, 0, 0, 0.03) !importan
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
   background: rgba(239, 68, 68, 0.08);
   color: #f87171;
@@ -491,8 +491,8 @@ body.light-mode .btn-action-delete {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
   background: rgba(16, 185, 129, 0.08);
   color: #10b981;
